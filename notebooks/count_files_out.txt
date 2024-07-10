@@ -1,0 +1,43 @@
+Scanning /home/buehlern/neocortex-nas/shared/Skelett
+Bodypart: BWS_NEU
+  Patients: 7870
+  Scans: 19646
+Bodypart: CLAVICULA_NEU
+  Patients: 4636
+  Scans: 24305
+Bodypart: DX_RIPPEN
+  Patients: 1261
+  Scans: 2673
+Bodypart: DX_Schädel_Neu
+  Patients: 4972
+  Scans: 13768
+Bodypart: ELLENBOGEN_NEU
+  Patients: 15552
+  Scans: 67432
+Bodypart: FUSS_NEU
+  Patients: 16664
+  Scans: 56066
+Bodypart: HAND_NEU
+  Patients: 15828
+  Scans: 42749
+Bodypart: HG_NEU
+  Patients: 12650
+  Scans: 53928
+Bodypart: HWS_NEU
+  Patients: 15107
+  Scans: 55417
+Bodypart: KNIE_NEU
+  Patients: 51365
+  Scans: 238676
+Bodypart: LWS_NEU
+  Patients: 3281
+  Scans: 11446
+Bodypart: SCAPULA_NEU
+  Patients: 813
+  Scans: 2008
+Bodypart: SCHULTER_NEU
+  Patients: 32500
+  Scans: 142120
+Bodypart: SG_NEU
+  Patients: 32723
+  Scans: 116453
