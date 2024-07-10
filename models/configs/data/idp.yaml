@@ -1,0 +1,3 @@
+_target_: src.data.idp_datamodule.IDPDataModule
+num_workers: 0
+pin_memory: True

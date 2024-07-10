@@ -1,0 +1,36 @@
+# @package _global_
+
+defaults:
+  - override /data: idp
+  - override /model: resnet50
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: wandb
+
+tags: ["idp", "resnet50", "overfit"]
+
+seed: 12345
+
+trainer:
+  #min_epochs: 1 # prevents early stopping
+  max_epochs: 30
+  accumulate_grad_batches: 10
+
+model:
+  optimizer:
+    #weight_decay: 0.006853864581783747
+    lr: 0.0002 # 0.0002 for overfitting 3 batches
+  num_classes: 15 # 15 body region labels in MRI data
+
+data:
+  total_data_size: 1000
+  batch_size: 8
+  #image_size: 3050
+  #max_size_padoutside: 3050
+  square: False # True
+  output_channels: 3
+  batch_binning: strict
+
+logger:
+  wandb:
+    tags: ${tags}
