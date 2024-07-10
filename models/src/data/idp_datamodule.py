@@ -20,7 +20,8 @@ class IDPDataModule(LightningDataModule):
             output_channels: int = 1,
             cache=True,
             total_data_size:int = None,
-            batch_binning: str = None
+            batch_binning: str = None,
+            fix_inverted: bool = False,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(logger=False)
@@ -34,6 +35,7 @@ class IDPDataModule(LightningDataModule):
         self.cache = cache
         self.total_data_size = total_data_size
         self.batch_binning = batch_binning
+        self.fix_inverted = fix_inverted
 
         self.data_train: Optional[torch.utils.data.Dataset] = None
         self.data_val: Optional[torch.utils.data.Dataset] = None
@@ -43,7 +45,7 @@ class IDPDataModule(LightningDataModule):
 
     def prepare_data(self) -> None:
         #self.dsbase = IDPDatasetBase(required_cols=None, size=self.image_size, square=self.square, output_channels=self.output_channels)
-        self.dsbase = IDPDatasetBase(required_cols=None, size=self.image_size, max_size_padoutside=self.image_size, square=self.square, output_channels=self.output_channels, cache=self.cache, total_size=self.total_data_size)
+        self.dsbase = IDPDatasetBase(required_cols=None, size=self.image_size, max_size_padoutside=self.image_size, square=self.square, output_channels=self.output_channels, cache=self.cache, total_size=self.total_data_size, fix_inverted=self.fix_inverted)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if not self.data_train and not self.data_val and not self.data_test:

@@ -42,7 +42,7 @@ if str(Path().resolve()) not in sys.path:
 import src.data.components.helpers as helpers
 
 class IDPDatasetBase(torch.utils.data.Dataset):
-    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, square_size_padoutside=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/IDPDatasetBaseCache', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, ratelimiting=False):
+    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, square_size_padoutside=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/IDPDatasetBaseCache', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
         """
         normalization_mode (float|'max'|None): None means no normalization is applied (the conversion to a float32 tensor nevertheless takes place), float: output is a 0-1-clipped normalization where >= normalization_mode quantile is 1
         """
@@ -67,6 +67,7 @@ class IDPDatasetBase(torch.utils.data.Dataset):
         self.clean_rotation = clean_rotation
         self.no_pixelarray_loading = no_pixelarray_loading
         self.total_size = total_size
+        self.fix_inverted = fix_inverted
         self.ratelimiting = ratelimiting
 
         if self.clean_brightedges and (self.max_size_padoutside is not None):
@@ -240,6 +241,10 @@ class IDPDatasetBase(torch.utils.data.Dataset):
 
         # add batch dim
         pixel_array = torch.tensor(pixel_array, dtype=torch.float32)[None]
+
+        # fix inverted scans
+        if self.fix_inverted and np.min(pixel_array) > 0:
+            pixel_array = np.max(pixel_array) - pixel_array
 
         if self.max_size_padoutside is not None:
             #pixel_array = TF.resize(pixel_array, size=self.max_size_padoutside - 1, max_size=self.max_size_padoutside)
