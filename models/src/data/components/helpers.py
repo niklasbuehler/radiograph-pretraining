@@ -1,3 +1,4 @@
+import time
 _print_ratelimited = (None, 0, 0)
 
 def print_ratelimited(*values,
