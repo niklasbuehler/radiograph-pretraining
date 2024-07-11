@@ -1,3 +1,5 @@
+_print_ratelimited = (None, 0, 0)
+
 def print_ratelimited(*values,
                       sep = " ",
                       end = "\n",
