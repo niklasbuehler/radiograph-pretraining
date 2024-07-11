@@ -22,20 +22,21 @@ model:
     #weight_decay: 0.006853864581783747
     lr: 0.0002 # 0.0002 for overfitting 3 batches
   image_size: 3072
-  #patch_size: 48
+  patch_size: 48
   #hidden_size: 4080 # 2040 # 768 # 576
   #intermediate_size: 8192 # 16384 # 8192 # 4096 # 3072
   #mask_ratio: 0.75
 
 data:
   #total_data_size: 1000
+  #df_name: clean_df_slim_1000
   batch_size: 1
   image_size: 3072
   square: True
   output_channels: 1
   #batch_binning: strict
-  num_workers: 1 # 63
-  #persistent_workers: True
+  num_workers: 8 # 1 # 63
+  persistent_workers: True
   cache: False
 
 logger:
