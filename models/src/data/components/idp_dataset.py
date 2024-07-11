@@ -348,7 +348,7 @@ class IDPDatasetBase(torch.utils.data.Dataset):
         return pixel_array
 
     def _getpixelarray(self, index, curitem_series):
-        if self.diskcache_reldir is not None:
+        if self.diskcache_reldir is not None and self.cache:
             s = os.stat(curitem_series['path'])
             cur_equalconfig_dict = {
                 'index': index,
@@ -381,7 +381,7 @@ class IDPDatasetBase(torch.utils.data.Dataset):
 
         pixel_array = self._getpixelarray_load(curitem_series)
 
-        if self.diskcache_reldir is not None:
+        if self.diskcache_reldir is not None and self.cache:
             try:
                 torch.save((cur_equalconfig_dict, pixel_array), cacheloc)
             except RuntimeError as e:
