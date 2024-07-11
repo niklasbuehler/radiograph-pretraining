@@ -11,6 +11,7 @@ from src.data.components.custom_batch_sampler import *
 class IDPDataModule(LightningDataModule):
     def __init__(
             self,
+            df_name: str = 'clean_df_slim',
             batch_size: int = 64,
             num_workers: int = 0,
             persistent_workers: bool = False,
@@ -25,6 +26,7 @@ class IDPDataModule(LightningDataModule):
     ) -> None:
         super().__init__()
         self.save_hyperparameters(logger=False)
+        self.df_name = df_name
         self.batch_size_per_device = batch_size
         self.num_workers = num_workers
         self.persistent_workers = persistent_workers
@@ -45,7 +47,7 @@ class IDPDataModule(LightningDataModule):
 
     def prepare_data(self) -> None:
         #self.dsbase = IDPDatasetBase(required_cols=None, size=self.image_size, square=self.square, output_channels=self.output_channels)
-        self.dsbase = IDPDatasetBase(required_cols=None, size=self.image_size, max_size_padoutside=self.image_size, square=self.square, output_channels=self.output_channels, cache=self.cache, total_size=self.total_data_size, fix_inverted=self.fix_inverted)
+        self.dsbase = IDPDatasetBase(required_cols=None, size=self.image_size, max_size_padoutside=self.image_size, square=self.square, output_channels=self.output_channels, df_name=self.df_name, cache=self.cache, total_size=self.total_data_size, fix_inverted=self.fix_inverted)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if not self.data_train and not self.data_val and not self.data_test:

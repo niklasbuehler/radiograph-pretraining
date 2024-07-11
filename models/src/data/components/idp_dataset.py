@@ -42,7 +42,7 @@ if str(Path().resolve()) not in sys.path:
 import src.data.components.helpers as helpers
 
 class IDPDatasetBase(torch.utils.data.Dataset):
-    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, square_size_padoutside=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/IDPDatasetBaseCache', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
+    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, square_size_padoutside=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/IDPDatasetBaseCache', df_name='clean_df_slim', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
         """
         normalization_mode (float|'max'|None): None means no normalization is applied (the conversion to a float32 tensor nevertheless takes place), float: output is a 0-1-clipped normalization where >= normalization_mode quantile is 1
         """
@@ -60,6 +60,7 @@ class IDPDatasetBase(torch.utils.data.Dataset):
         self.fracturepseudolabled = fracturepseudolabled
         self.cache = cache
         self.diskcache_reldir = diskcache_reldir
+        self.df_name = df_name
         self.return_df_row = return_df_row
         self.return_custom_cols = return_custom_cols
         self.normalization_mode = normalization_mode
@@ -110,7 +111,7 @@ class IDPDatasetBase(torch.utils.data.Dataset):
             dataset_thin_loc = self.projectdir / Path(
                 f'data/cache-full/dataset_thin{"_annotated" if self.annotated else ""}{"_fracturepseudolabled" if self.fracturepseudolabled else ""}.pt')
             dataset_full_loc = self.projectdir / Path(
-                f'data/clean_df{"_annotated" if self.annotated else ""}{"_fracturepseudolabled" if self.fracturepseudolabled else ""}.pkl')
+                f'data/{self.df_name}{"_annotated" if self.annotated else ""}{"_fracturepseudolabled" if self.fracturepseudolabled else ""}.pkl')
 
             def getdf_slow():
                 assert mayuseslow
@@ -243,8 +244,10 @@ class IDPDatasetBase(torch.utils.data.Dataset):
         pixel_array = torch.tensor(pixel_array, dtype=torch.float32)[None]
 
         # fix inverted scans
-        if self.fix_inverted and np.min(pixel_array) > 0:
-            pixel_array = np.max(pixel_array) - pixel_array
+        if self.fix_inverted:
+            inverted = curitem_series['inverted']
+            if inverted:
+                pixel_array = torch.max(pixel_array) - pixel_array
 
         if self.max_size_padoutside is not None:
             #pixel_array = TF.resize(pixel_array, size=self.max_size_padoutside - 1, max_size=self.max_size_padoutside)
