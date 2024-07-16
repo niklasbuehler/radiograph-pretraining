@@ -248,6 +248,7 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         if self.fix_inverted:
             inverted = curitem_series['inverted']
             if inverted:
+                #print("Fixing inverted scan")
                 pixel_array = torch.max(pixel_array) - pixel_array
 
         # padding and resizing
