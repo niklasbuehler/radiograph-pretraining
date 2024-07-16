@@ -1,0 +1,6 @@
+_target_: src.data.idp_datamodule.IDPDataModule
+cache: False
+num_workers: 2
+persistent_workers: True
+pin_memory: True
+fix_inverted: True

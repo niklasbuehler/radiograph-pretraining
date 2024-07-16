@@ -35,9 +35,9 @@ data:
   square: True
   output_channels: 1
   #batch_binning: strict
-  num_workers: 8 # 1 # 63
-  persistent_workers: True
   cache: False
+  num_workers: 2
+  persistent_workers: True
 
 logger:
   wandb:
