@@ -1,13 +1,13 @@
 # @package _global_
 
 defaults:
-  - override /data: idp
+  - override /data: mri
   - override /model: vit_mae
   - override /callbacks: mae
   - override /trainer: gpu
   - override /logger: wandb
 
-tags: ["idp", "vit", "mae", "memory-test"]
+tags: ["ma", "mri", "vit", "mae", "memory-test"]
 
 seed: 12345
 

@@ -1,4 +1,4 @@
-_target_: src.data.idp_datamodule.IDPDataModule
+_target_: src.data.mri_datamodule.MRIDataModule
 cache: False
 num_workers: 2
 persistent_workers: True

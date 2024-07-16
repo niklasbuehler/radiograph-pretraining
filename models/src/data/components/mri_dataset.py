@@ -41,8 +41,8 @@ if str(Path().resolve()) not in sys.path:
 
 import src.data.components.helpers as helpers
 
-class IDPDatasetBase(torch.utils.data.Dataset):
-    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/IDPDatasetBaseCache', df_name='clean_df_slim', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
+class MRIDatasetBase(torch.utils.data.Dataset):
+    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, pad_to_multiple_of=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/MRIDatasetBaseCache', df_name='clean_df_slim', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
         """
         normalization_mode (float|'max'|None): None means no normalization is applied (the conversion to a float32 tensor nevertheless takes place), float: output is a 0-1-clipped normalization where >= normalization_mode quantile is 1
         """
@@ -55,6 +55,8 @@ class IDPDatasetBase(torch.utils.data.Dataset):
         self.projectdir = Path(projectdir)
         # max_size_padoutside overrides size setting if not None
         self.max_size_padoutside = max_size_padoutside
+        # pad_to_multiple_of overrides size setting if not None
+        self.pad_to_multiple_of = pad_to_multiple_of
         self.annotated = annotated
         self.fracturepseudolabled = fracturepseudolabled
         self.cache = cache
@@ -93,7 +95,7 @@ class IDPDatasetBase(torch.utils.data.Dataset):
                                  'patientid', 'examinationid', 'findingspath', 'findings', 'dcm_SOPInstanceUID', 'dcm_PatientID', 'dcm_BodyPartExamined', 'pixelarr_shape',
                                  'fracturenum', 'fracture_pseudolabel', 'fracture_bestlabel', 'fracture_bestlabeltext')
 
-        print('initializing IDPDatasetBase ...')
+        print('initializing MRIDatasetBase ...')
         if self.diskcache_reldir is not None:
             self.diskcache_reldir = Path(self.diskcache_reldir)
             if diskcache_reldir_autoappend:
@@ -212,7 +214,7 @@ class IDPDatasetBase(torch.utils.data.Dataset):
         return len(self.df)
 
     def __repr__(self) -> str:
-        return f'IDPDatasetBase(len={len(self.df)})'
+        return f'MRIDatasetBase(len={len(self.df)})'
 
     def __str__(self) -> str:
         return repr(self)
@@ -248,7 +250,18 @@ class IDPDatasetBase(torch.utils.data.Dataset):
             if inverted:
                 pixel_array = torch.max(pixel_array) - pixel_array
 
-        if self.max_size_padoutside is not None:
+        # padding and resizing
+        if self.pad_to_multiple_of is not None:
+            missing_cols = (self.pad_to_multiple_of - pixel_array.shape[-1] % self.pad_to_multiple_of) % self.pad_to_multiple_of
+            pad_left = missing_cols // 2
+            pad_right = sum(divmod(missing_cols, 2))
+
+            missing_rows = (self.pad_to_multiple_of - pixel_array.shape[-2] % self.pad_to_multiple_of) % self.pad_to_multiple_of
+            pad_top = missing_rows // 2
+            pad_bottom = sum(divmod(missing_rows, 2))
+
+            pixel_array = F.pad(pixel_array, [0, pad_left+pad_right, 0, pad_top+pad_bottom])
+        elif self.max_size_padoutside is not None:
             #pixel_array = TF.resize(pixel_array, size=self.max_size_padoutside - 1, max_size=self.max_size_padoutside)
             max_size = self.max_size_padoutside # max(pixel_array.shape)
             missing_cols = max_size - pixel_array.shape[-1]
@@ -437,16 +450,16 @@ def order_points(pts):
     # Return the ordered coordinates.
     return rect.astype('int').tolist()
 
-class IDPDataset(torch.utils.data.Dataset):
+class MRIDataset(torch.utils.data.Dataset):
     def __init__(self, dsbase, mode, stratification_target='bodypart', seed=42, total_size=None, val_size=0.2, test_size=0.2, extra_filter=None):
         super().__init__()
         self.dsbase = dsbase
         self.mode = mode
         self.total_size = total_size
-        print(f'\ninitializing IDPDataset(mode={self.mode}) ...')
+        print(f'\ninitializing MRIDataset(mode={self.mode}) ...')
 
         if not mode in ['train', 'val', 'test', 'train+val', 'train+val+test']:
-            raise ValueError('invalid IDPDataset mode')
+            raise ValueError('invalid MRIDataset mode')
         modeset = set(mode.split('+'))
         self.modeset = modeset
 
@@ -529,7 +542,7 @@ class IDPDataset(torch.utils.data.Dataset):
         return len(self.df)
 
     def __repr__(self) -> str:
-        return f'IDPDataset(mode={self.mode}, len={len(self.df)})'
+        return f'MRIDataset(mode={self.mode}, len={len(self.df)})'
 
     def __str__(self) -> str:
         return repr(self)
