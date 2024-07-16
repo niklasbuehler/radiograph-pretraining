@@ -31,9 +31,11 @@ data:
   #total_data_size: 1000
   #df_name: clean_df_slim_1000
   batch_size: 1
-  image_size: 3072
-  square: True
+  image_size: 3072 # None
+  square: True # False
+  # pad_to_multiple_of: 48 # = patch_size
   output_channels: 1
+  fix_inverted: True
   #batch_binning: strict
   cache: False
   num_workers: 2

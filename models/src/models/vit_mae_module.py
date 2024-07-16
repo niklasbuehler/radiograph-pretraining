@@ -58,7 +58,7 @@ class VisionTransformerMAE(LightningModule):
         #return self.net(**inputs).logits
         #print("Type of inputs", type(inputs))
         #return None
-        return self.net(inputs).logits
+        return self.net(inputs, interpolate_pos_encoding=False).logits
 
     def model_step(
         self, batch: Tuple[torch.Tensor, torch.Tensor]
