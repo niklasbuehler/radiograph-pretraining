@@ -1,9 +1,19 @@
 _target_: src.models.vit_mae_module.VisionTransformerMAE
 
+image_size: 3072
+patch_size: 48
+image_channels: 1
+# compile model for faster training with pytorch 2.0
+compile: true
+
 optimizer:
-  _target_: torch.optim.Adam
+  _target_: torch.optim.AdamW
   _partial_: true
-  lr: 0.01
+  lr: 1.5e-4
+  weight_decay: 0.05
+  betas:
+  - 0.9
+  - 0.95
 
 #scheduler:
 #  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
@@ -13,8 +23,6 @@ optimizer:
 scheduler:
   _target_: pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR
   _partial_: true
+  warmup_start_lr: 1e-5
   warmup_epochs: 5
   max_epochs: 10
-
-# compile model for faster training with pytorch 2.0
-compile: false
