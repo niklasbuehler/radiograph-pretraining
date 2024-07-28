@@ -12,25 +12,27 @@ tags: ["ma", "mri", "vit", "mae"]
 seed: 12345
 
 trainer:
-  min_epochs: 1  # prevents early stopping
+  min_epochs: 1 # prevents early stopping
   max_epochs: 1
   accumulate_grad_batches: 32
+  gradient_clip_val: 0.5
 
 model:
   optimizer:
     #weight_decay: 0.006853864581783747
-    lr: 0.0002 # Result: 0.002046398225251845
+    lr: 0.002 # Result: 0.0018400041979592676
   image_size: 3072
   patch_size: 48
   image_channels: 1
 
 data:
-  total_data_size: 1000
+  total_data_size: 10000
+  #df_name: clean_df_slim_1000
   batch_size: 1
   image_size: 3072
   square: True
+  #pad_to_multiple_of: 48 # = patch_size
   output_channels: 1
-  # batch_binning: strict
 
 logger:
   wandb:
