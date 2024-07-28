@@ -51,6 +51,10 @@ class VisionTransformerMAE(LightningModule):
         self.net = ViTMAEForPreTraining(config)
 
         self.mse_loss = MeanSquaredError()
+    
+    def detect_black_patches(self, images):
+        black_mask = (images == 0).all(dim=1) # (batch, height, width)
+        return black_mask
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         #inputs = self.image_processor(x, return_tensors="pt").to(self.device)
@@ -69,6 +73,10 @@ class VisionTransformerMAE(LightningModule):
         #print(inputs)
         #print(type(inputs))
         #print("Shape of inputs:", inputs["pixel_values"].size()) # [16, 3, 224, 224]
+
+        # Detect black patches
+        black_patches_mask = self.detect_black_patches(x)
+        black_patches_mask_flat = black_patches_mask.view(x.size(0), -1) # (batch, num_patches)
 
         outputs = self(x)
         #print("Shape of outputs:", outputs.size()) # [16, 196, 768]
@@ -90,6 +98,7 @@ class VisionTransformerMAE(LightningModule):
             print("Batch contains NaN:", torch.isnan(batch).any())
             return None
         self.log("train/loss", loss, on_epoch=True, prog_bar=True)
+        # self.lr_schedulers().step() # recommended to call every iteration, otherwise lr=0 for first epoch
         lr = self.trainer.optimizers[0].param_groups[0]['lr']
         self.log("learning_rate", lr, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
