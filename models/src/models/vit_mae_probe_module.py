@@ -122,6 +122,10 @@ class MAEFineProbeBodyPartClassifier(LightningModule):
 
     def on_test_epoch_end(self) -> None:
         pass
+    
+    def setup(self, stage: str) -> None:
+        if self.hparams.compile and stage == "fit":
+            self.net = torch.compile(self.net
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.classifier.parameters())

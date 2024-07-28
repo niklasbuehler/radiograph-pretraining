@@ -34,3 +34,4 @@ scikit-learn
 scikit-image
 transformers
 requests
+lightning-bolts

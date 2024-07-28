@@ -87,8 +87,11 @@ class VisionTransformerMAE(LightningModule):
         loss, _ = self.model_step(batch)
         if torch.isnan(loss).any():
             print("WARN: NaN loss returned for batch #", batch_idx)
+            print("Batch contains NaN:", torch.isnan(batch).any())
             return None
         self.log("train/loss", loss, on_epoch=True, prog_bar=True)
+        lr = self.trainer.optimizers[0].param_groups[0]['lr']
+        self.log("learning_rate", lr, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
@@ -101,6 +104,24 @@ class VisionTransformerMAE(LightningModule):
 
         self.log("test/loss", loss, on_epoch=True, prog_bar=True)
 
+    def on_test_epoch_end(self) -> None:
+        pass
+    
+    def setup(self, stage: str) -> None:
+        if self.hparams.compile and stage == "fit":
+            self.net = torch.compile(self.net)
+
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.net.parameters())
+        if self.hparams.scheduler is not None:
+            scheduler = self.hparams.scheduler(optimizer=optimizer)
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": {
+                    "scheduler": scheduler,
+                    "monitor": "val/loss",
+                    "interval": "epoch",
+                    "frequency": 1,
+                },
+            }
         return {"optimizer": optimizer}

@@ -5,12 +5,16 @@ optimizer:
   _partial_: true
   lr: 0.01
 
+#scheduler:
+#  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+#  _partial_: true
+#  T_max: 5
+
 scheduler:
-  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _target_: pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR
   _partial_: true
-  mode: min
-  factor: 0.1
-  patience: 10
+  warmup_epochs: 5
+  max_epochs: 10
 
 # compile model for faster training with pytorch 2.0
 compile: false
