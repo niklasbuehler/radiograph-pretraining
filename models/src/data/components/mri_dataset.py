@@ -452,7 +452,7 @@ def order_points(pts):
     return rect.astype('int').tolist()
 
 class MRIDataset(torch.utils.data.Dataset):
-    def __init__(self, dsbase, mode, stratification_target='bodypart', seed=42, total_size=None, val_size=0.2, test_size=0.2, extra_filter=None):
+    def __init__(self, dsbase, mode, stratification_target='bodypart', seed=42, total_size=None, val_size=0.05, test_size=0.15, extra_filter=None):
         super().__init__()
         self.dsbase = dsbase
         self.mode = mode
