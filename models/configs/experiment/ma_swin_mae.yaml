@@ -1,0 +1,40 @@
+# @package _global_
+
+defaults:
+  - override /data: mri
+  - override /model: swin_mae
+  - override /callbacks: mae
+  - override /trainer: gpu
+  - override /logger: wandb
+
+tags: ["ma", "mri", "swin", "mae"]
+
+seed: 12345
+
+trainer:
+  min_epochs: 1 # prevents early stopping
+  max_epochs: 10
+  accumulate_grad_batches: 64 # effective batch size = 64*batch_size
+  gradient_clip_val: 0.5
+
+model:
+  optimizer:
+    _target_: torch.optim.AdamW
+    _partial_: true
+    lr: 1e-4
+    weight_decay: 0.05
+    betas:
+    - 0.9
+    - 0.95
+
+data:
+  batch_size: 16
+  num_workers: 16
+  image_size: 3072
+  square: True
+  #pad_to_multiple_of: 48 # = patch_size
+  output_channels: 1
+
+logger:
+  wandb:
+    tags: ${tags}
