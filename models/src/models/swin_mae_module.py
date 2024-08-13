@@ -73,7 +73,7 @@ class SWINTransformerMAE(LightningModule):
         bool_masked_pos = torch.randint(low=0, high=2, size=(1, num_patches)).bool().to(self.device)
 
         outputs = self.net(inputs, bool_masked_pos=bool_masked_pos, interpolate_pos_encoding=False)
-        
+
         return outputs.reconstruction
 
     def model_step(
@@ -89,6 +89,15 @@ class SWINTransformerMAE(LightningModule):
 
         loss = self.mse_loss(reconstructions, x)
 
+        if torch.isnan(loss).any():
+            print("WARN: NaN loss in model_step")
+            print("      x shape", x.shape)
+            print("      x contains NaN: ", torch.isnan(x).any())
+            print("      reconstructions shape", reconstructions.shape)
+            print("      reconstructions contain NaN: ", torch.isnan(reconstructions).any())
+            print("      loss shape", loss.shape)
+            print("      loss", loss)
+
         return loss, reconstructions
 
     def training_step(
@@ -97,7 +106,7 @@ class SWINTransformerMAE(LightningModule):
         loss, _ = self.model_step(batch)
         if torch.isnan(loss).any():
             print("WARN: NaN loss returned for batch #", batch_idx)
-            print("Batch contains NaN:", torch.isnan(batch).any())
+            print("      Returning None as loss")
             return None
         self.log("train/loss", loss, on_epoch=True, prog_bar=True)
         #self.lr_schedulers().step() # recommended to call every iteration, otherwise lr=0 for first epoch
