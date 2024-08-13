@@ -6,20 +6,31 @@ from torch import nn
 from torchmetrics import MeanSquaredError
 from transformers import Swinv2ForMaskedImageModeling, Swinv2Config
 
+def print_config(config):
+    config_dict = config.to_dict()
+    config_dict.pop('id2label', None)
+    config_dict.pop('label2id', None)
+    for k in config_dict:
+        print(k, config_dict[k])
+
 class SWINTransformerMAE(LightningModule):
     def __init__(
         self,
         optimizer: torch.optim.Optimizer = None,
         scheduler: torch.optim.lr_scheduler = None,
         compile: bool = False,
-        image_size = 224,
+        image_size = 384,
         patch_size = 4,
+        encoder_stride = 32,
+        window_size = 24,
         mask_ratio = 0.75,
         image_channels = 1,
     ) -> None:
         super().__init__()
         self.image_size = image_size
         self.patch_size = patch_size
+        self.encoder_stride = encoder_stride
+        self.window_size = window_size
         self.image_channels = image_channels
         self.mask_ratio = mask_ratio
         self.save_hyperparameters()
@@ -28,16 +39,23 @@ class SWINTransformerMAE(LightningModule):
         #self.image_procesor = AutoImageProcessor.from_pretrained("microsoft/swinv2-large-patch4-window12to24-192to384-22kto1k-ft")
 
         # Load SWIN model
-        # Doesn't work with other image sizes: self.net = ViTMAEForPreTraining.from_pretrained("facebook/vit-mae-base")
-        #config = Swinv2Config.from_pretrained("microsoft/swinv2-large-patch4-window12to24-192to384-22kto1k-ft")
-        config = Swinv2Config.from_pretrained("microsoft/swinv2-base-patch4-window12to24-192to384-22kto1k-ft")
+        #config = Swinv2Config.from_pretrained("microsoft/swinv2-base-patch4-window12to24-192to384-22kto1k-ft")
+        config = Swinv2Config.from_pretrained("microsoft/swinv2-large-patch4-window12to24-192to384-22kto1k-ft")
+        #print_config(config)
 
         if self.image_size is not None:
             config.image_size = self.image_size
         if self.patch_size is not None:
             config.patch_size = self.patch_size
+        if self.encoder_stride is not None:
+            config.encoder_stride = self.encoder_stride
+        if self.window_size is not None:
+            config.window_size = self.window_size
         if self.image_channels is not None:
             config.num_channels = self.image_channels
+
+        #print_config(config)
+
         self.net = Swinv2ForMaskedImageModeling(config)
 
         self.mse_loss = MeanSquaredError()
