@@ -14,14 +14,14 @@ seed: 12345
 trainer:
   min_epochs: 1 # prevents early stopping
   max_epochs: 5
-  accumulate_grad_batches: 64 # effective batch size = 64*batch_size
+  accumulate_grad_batches: 256
   gradient_clip_val: 0.5
 
 model:
   optimizer:
     _target_: torch.optim.AdamW
     _partial_: true
-    lr: 1.5e-4
+    lr: 0.001
     weight_decay: 0.05
     betas:
     - 0.9
@@ -36,8 +36,9 @@ model:
 data:
   total_data_size: 10000
   #df_name: clean_df_slim_1000
-  batch_size: 16
-  num_workers: 2
+  batch_size: 4
+  num_workers: 4
+  persistent_workers: true
   image_size: 3072
   square: True
   #pad_to_multiple_of: 48 # = patch_size
