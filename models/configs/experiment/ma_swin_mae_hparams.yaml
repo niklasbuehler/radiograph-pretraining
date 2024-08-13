@@ -3,7 +3,7 @@
 defaults:
   - override /data: mri
   - override /model: swin_mae
-  - override /callbacks: mae
+  - override /callbacks: mae_no_checkpoints
   - override /trainer: gpu
   - override /logger: wandb
 

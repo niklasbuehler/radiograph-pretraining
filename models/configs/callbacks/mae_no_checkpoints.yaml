@@ -1,0 +1,6 @@
+defaults:
+  - mae
+
+model_checkpoint:
+  save_last: False
+  every_n_epochs: null

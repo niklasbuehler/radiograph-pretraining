@@ -3,7 +3,7 @@
 defaults:
   - override /data: mri
   - override /model: swin_mae
-  - override /callbacks: mae
+  - override /callbacks: mae_no_checkpoints
   - override /trainer: gpu
   - override /logger: wandb
 
@@ -13,7 +13,7 @@ seed: 12345
 
 trainer:
   min_epochs: 1 # prevents early stopping
-  max_epochs: 1
+  max_epochs: 10
   accumulate_grad_batches: 1
   gradient_clip_val: 0.5
 
