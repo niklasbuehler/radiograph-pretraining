@@ -11,7 +11,7 @@ from src.data.components.custom_batch_sampler import *
 class MRIDataModule(LightningDataModule):
     def __init__(
             self,
-            df_name: str = 'clean_df_slim',
+            df_name: str = 'clean_df_slim_frac',
             batch_size: int = 64,
             num_workers: int = 0,
             persistent_workers: bool = False,

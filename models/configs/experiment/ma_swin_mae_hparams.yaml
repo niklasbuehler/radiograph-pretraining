@@ -35,7 +35,6 @@ model:
 
 data:
   total_data_size: 10000
-  #df_name: clean_df_slim_1000
   batch_size: 4
   num_workers: 4
   persistent_workers: true
