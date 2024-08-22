@@ -6,6 +6,8 @@ from torch import nn
 from torchmetrics import MeanSquaredError
 from transformers import Swinv2ForMaskedImageModeling, Swinv2Config
 
+from src.models.components.mask_generator import MaskGenerator
+
 def print_config(config):
     config_dict = config.to_dict()
     config_dict.pop('id2label', None)
@@ -58,6 +60,13 @@ class SWINTransformerMAE(LightningModule):
 
         self.net = Swinv2ForMaskedImageModeling(config)
 
+        self.mask_generator = MaskGenerator(
+            input_size = self.image_size,
+            mask_patch_size = self.patch_size,
+            model_patch_size = self.patch_size,
+            mask_ratio = self.mask_ratio
+        )
+
         self.mse_loss = MeanSquaredError()
     
     def detect_black_patches(self, images):
@@ -68,9 +77,8 @@ class SWINTransformerMAE(LightningModule):
         #inputs = self.image_processor(x, return_tensors="pt").to(self.device)
         inputs = x.to(self.device)
 
-        num_patches = (self.net.config.image_size // self.net.config.patch_size) ** 2
-        #pixel_values = self.image_processor(images=inputs, return_tensors="pt").pixel_values
-        bool_masked_pos = torch.randint(low=0, high=2, size=(1, num_patches)).bool().to(self.device)
+        # Generate batch of masks
+        bool_masked_pos = torch.stack([self.mask_generator() for item in inputs]).to(self.device)
 
         outputs = self.net(inputs, bool_masked_pos=bool_masked_pos, interpolate_pos_encoding=False)
 
@@ -82,8 +90,8 @@ class SWINTransformerMAE(LightningModule):
         x, _ = batch
 
         # Detect black patches
-        black_patches_mask = self.detect_black_patches(x)
-        black_patches_mask_flat = black_patches_mask.view(x.size(0), -1) # (batch, num_patches)
+        #black_patches_mask = self.detect_black_patches(x)
+        #black_patches_mask_flat = black_patches_mask.view(x.size(0), -1) # (batch, num_patches)
 
         reconstructions = self(x)
 
