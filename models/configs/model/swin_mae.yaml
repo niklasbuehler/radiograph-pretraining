@@ -4,6 +4,7 @@ image_size: 3072
 patch_size: 8 # 16
 encoder_stride: 64 # 128
 image_channels: 1
+mask_ratio: 0.75
 compile: true # compile model for faster training with pytorch 2.0
 
 optimizer:
