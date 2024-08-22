@@ -35,7 +35,7 @@ class VisionTransformerMAE(LightningModule):
 
         # Load ViT Masked Autoencoder model
         # Doesn't work with other image sizes: self.net = ViTMAEForPreTraining.from_pretrained("facebook/vit-mae-base")
-        config = ViTMAEConfig.from_pretrained("facebook/vit-mae-large")
+        config = ViTMAEConfig.from_pretrained("facebook/vit-mae-large", attn_implementation='eager', output_attentions=True)
         if self.image_size is not None:
             config.image_size = self.image_size
         if self.patch_size is not None:
@@ -48,6 +48,9 @@ class VisionTransformerMAE(LightningModule):
             config.num_channels = self.image_channels
         if self.mask_ratio is not None:
             config.mask_ratio = self.mask_ratio
+        # Allow outputting attentions for visualizations
+        #config.output_attentions = True
+        #config.attn_implementation = "eager"
         self.net = ViTMAEForPreTraining(config)
 
         self.mse_loss = MeanSquaredError()
