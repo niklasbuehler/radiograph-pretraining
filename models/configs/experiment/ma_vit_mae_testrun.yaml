@@ -14,7 +14,7 @@ seed: 12345
 trainer:
   min_epochs: 1 # prevents early stopping
   max_epochs: 1
-  accumulate_grad_batches: 64 # effective batch size = 64*batch_size
+  accumulate_grad_batches: 1 # 64 # effective batch size = 64*batch_size
   gradient_clip_val: 0.5
 
 model:
@@ -29,12 +29,14 @@ model:
 
 data:
   total_data_size: 500
-  batch_size: 16
+  batch_size: 8
   num_workers: 2
   persistent_workers: True
-  image_size: 3072
-  square: True
+  #image_size: 3072
+  #square: True
   #pad_to_multiple_of: 48 # = patch_size
+  batch_binning: smart
+  batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
   output_channels: 1
 
 logger:

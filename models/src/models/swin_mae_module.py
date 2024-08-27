@@ -76,11 +76,12 @@ class SWINTransformerMAE(LightningModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         #inputs = self.image_processor(x, return_tensors="pt").to(self.device)
         inputs = x.to(self.device)
-
+        print("inputs.shape:", inputs.shape)
         # Generate batch of masks
         bool_masked_pos = torch.stack([self.mask_generator() for item in inputs]).to(self.device)
 
-        outputs = self.net(inputs, bool_masked_pos=bool_masked_pos, interpolate_pos_encoding=False)
+        outputs = self.net(inputs, bool_masked_pos=bool_masked_pos, interpolate_pos_encoding=True)
+        print("outputs.reconstruction.shape:", outputs.reconstruction.shape)
 
         return outputs.reconstruction
 

@@ -65,7 +65,7 @@ class VisionTransformerMAE(LightningModule):
         #return self.net(**inputs).logits
         #print("Type of inputs", type(inputs))
         #return None
-        return self.net(inputs, interpolate_pos_encoding=False).logits
+        return self.net(inputs, interpolate_pos_encoding=True).logits
 
     def model_step(
         self, batch: Tuple[torch.Tensor, torch.Tensor]
@@ -83,7 +83,7 @@ class VisionTransformerMAE(LightningModule):
 
         outputs = self(x)
         #print("Shape of outputs:", outputs.size()) # [16, 196, 768]
-        reconstructions = self.net.unpatchify(outputs).to(self.device)
+        reconstructions = self.net.unpatchify(outputs, original_image_size=x.size()[-2:]).to(self.device)
         #print("Shape of reconstructions:", reconstructions.size()) # [16, 3, 224, 224]
 
         #print("Type of reconstructions:", type(reconstructions))

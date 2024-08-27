@@ -42,9 +42,9 @@ data:
   batch_size: 1
   num_workers: 2
   persistent_workers: True
-  image_size: 3072
-  square: True
-  #pad_to_multiple_of: 48 # = patch_size
+  #image_size: 3072
+  square: False
+  pad_to_multiple_of: 8 # = patch_size
   output_channels: 1
 
 logger:

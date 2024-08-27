@@ -23,6 +23,7 @@ class MRIDataModule(LightningDataModule):
             cache=True,
             total_data_size:int = None,
             batch_binning: str = None,
+            batch_bins: list[int] = None,
             fix_inverted: bool = False,
     ) -> None:
         super().__init__()
@@ -39,6 +40,7 @@ class MRIDataModule(LightningDataModule):
         self.cache = cache
         self.total_data_size = total_data_size
         self.batch_binning = batch_binning
+        self.batch_bins = batch_bins
         self.fix_inverted = fix_inverted
 
         self.data_train: Optional[torch.utils.data.Dataset] = None
@@ -48,7 +50,7 @@ class MRIDataModule(LightningDataModule):
         self.setup()
 
     def prepare_data(self) -> None:
-        self.dsbase = MRIDatasetBase(required_cols=None, size=self.image_size, max_size_padoutside=self.image_size, square=self.square, pad_to_multiple_of=self.pad_to_multiple_of, output_channels=self.output_channels, df_name=self.df_name, cache=self.cache, total_size=self.total_data_size, fix_inverted=self.fix_inverted)
+        self.dsbase = MRIDatasetBase(required_cols=None, size=self.image_size, max_size_padoutside=self.image_size, square=self.square, pad_to_multiple_of=self.pad_to_multiple_of, pad_to_bins=self.batch_bins, output_channels=self.output_channels, df_name=self.df_name, cache=self.cache, total_size=self.total_data_size, fix_inverted=self.fix_inverted)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if not self.data_train and not self.data_val and not self.data_test:
@@ -59,10 +61,8 @@ class MRIDataModule(LightningDataModule):
             self.data_test = MRIDataset(self.dsbase, 'test', seed=0, total_size=self.total_data_size)
     
     def get_batch_sampler(self, data, mode=None):
-        if self.batch_binning == 'strict':
-            return CustomBatchSampler(data, batch_size=self.batch_size_per_device, mode=mode)
-        elif self.batch_binning == 'smart':
-            return CustomBatchSampler(data, batch_size=self.batch_size_per_device, mode=mode)
+        if self.batch_binning is not None:
+            return CustomBatchSampler(data, batch_size=self.batch_size_per_device, mode=mode, binning_strategy=self.batch_binning, bins=self.batch_bins)
         else:
             return None
 
@@ -99,7 +99,7 @@ class MRIDataModule(LightningDataModule):
                 num_workers=self.num_workers,
                 persistent_workers=self.persistent_workers,
                 pin_memory=self.pin_memory,
-                batch_sampler=self.get_batch_sampler(self.data_val),
+                batch_sampler=self.get_batch_sampler(self.data_val, mode='val'),
                 #shuffle=False,
                 #batch_size=self.batch_size_per_device
             )
@@ -122,7 +122,7 @@ class MRIDataModule(LightningDataModule):
                 num_workers=self.num_workers,
                 persistent_workers=self.persistent_workers,
                 pin_memory=self.pin_memory,
-                batch_sampler=self.get_batch_sampler(self.data_test),
+                batch_sampler=self.get_batch_sampler(self.data_test, mode='test'),
                 #shuffle=False,
                 #batch_size=self.batch_size_per_device
             )

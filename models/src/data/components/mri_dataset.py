@@ -42,7 +42,7 @@ if str(Path().resolve()) not in sys.path:
 import src.data.components.helpers as helpers
 
 class MRIDatasetBase(torch.utils.data.Dataset):
-    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, pad_to_multiple_of=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/MRIDatasetBaseCache', df_name='clean_df_slim_frac', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
+    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, pad_to_multiple_of=None, pad_to_bins=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/MRIDatasetBaseCache', df_name='clean_df_slim_frac', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
         """
         normalization_mode (float|'max'|None): None means no normalization is applied (the conversion to a float32 tensor nevertheless takes place), float: output is a 0-1-clipped normalization where >= normalization_mode quantile is 1
         """
@@ -55,8 +55,10 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         self.projectdir = Path(projectdir)
         # max_size_padoutside overrides size setting if not None
         self.max_size_padoutside = max_size_padoutside
-        # pad_to_multiple_of overrides size setting if not None
+        # pad_to_multiple_of overrides previous size settings if not None
         self.pad_to_multiple_of = pad_to_multiple_of
+        # pad_to_bins overrides previous size settings if not None
+        self.pad_to_bins = pad_to_bins
         self.annotated = annotated
         self.fracturepseudolabled = fracturepseudolabled
         self.cache = cache
@@ -252,7 +254,23 @@ class MRIDatasetBase(torch.utils.data.Dataset):
                 pixel_array = torch.max(pixel_array) - pixel_array
 
         # padding and resizing
-        if self.pad_to_multiple_of is not None:
+        if self.pad_to_bins is not None:
+            # Pad the image to next bin size
+            width, height = pixel_array.shape[-2:]
+            new_width = next((w for w in self.pad_to_bins if w >= width), width)
+            new_height = next((h for h in self.pad_to_bins if h >= height), height)
+
+            missing_rows = new_height - pixel_array.shape[-1]
+            pad_top = missing_rows // 2
+            pad_bottom = sum(divmod(missing_rows, 2))
+            
+            missing_cols = new_width - pixel_array.shape[-2]
+            pad_left = missing_cols // 2
+            pad_right = sum(divmod(missing_cols, 2))
+
+            pixel_array = F.pad(pixel_array, [0, pad_left+pad_right, 0, pad_top+pad_bottom])
+        elif self.pad_to_multiple_of is not None:
+            # Pad the image to the next bigger multiple of pad_to_multiple_of
             missing_cols = (self.pad_to_multiple_of - pixel_array.shape[-1] % self.pad_to_multiple_of) % self.pad_to_multiple_of
             pad_left = missing_cols // 2
             pad_right = sum(divmod(missing_cols, 2))
