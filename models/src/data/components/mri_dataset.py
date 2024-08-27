@@ -256,19 +256,22 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         # padding and resizing
         if self.pad_to_bins is not None:
             # Pad the image to next bin size
-            width, height = pixel_array.shape[-2:]
+            #print("Padding", pixel_array.shape)
+            height, width = pixel_array.shape[-2:]
             new_width = next((w for w in self.pad_to_bins if w >= width), width)
             new_height = next((h for h in self.pad_to_bins if h >= height), height)
-
-            missing_rows = new_height - pixel_array.shape[-1]
-            pad_top = missing_rows // 2
-            pad_bottom = sum(divmod(missing_rows, 2))
             
-            missing_cols = new_width - pixel_array.shape[-2]
+            missing_cols = new_width - pixel_array.shape[-1]
             pad_left = missing_cols // 2
             pad_right = sum(divmod(missing_cols, 2))
 
+            missing_rows = new_height - pixel_array.shape[-2]
+            pad_top = missing_rows // 2
+            pad_bottom = sum(divmod(missing_rows, 2))
+
             pixel_array = F.pad(pixel_array, [0, pad_left+pad_right, 0, pad_top+pad_bottom])
+            #print("(width, height):", (width, height), "->", (pad_left+pad_right, pad_top+pad_bottom), "->", (new_width, new_height))
+            #print("Padded to", pixel_array.shape)
         elif self.pad_to_multiple_of is not None:
             # Pad the image to the next bigger multiple of pad_to_multiple_of
             missing_cols = (self.pad_to_multiple_of - pixel_array.shape[-1] % self.pad_to_multiple_of) % self.pad_to_multiple_of

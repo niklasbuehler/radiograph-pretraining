@@ -4,8 +4,10 @@ from collections import defaultdict
 import numpy as np
 
 class CustomBatchSampler(Sampler):
-    def __init__(self, data_source, batch_size, mode, binning_strategy, bins=None):
+    def __init__(self, data_source, batch_size, mode, binning_strategy, bins=None, img_size_map=None):
         self.data_source = data_source
+         # use img_size_map extracted from dataframe to avoid having to open every image for filling the bins 
+        self.img_size_map = img_size_map
         self.batch_size = batch_size
         self.mode = mode
         self.binning_strategy = binning_strategy
@@ -13,18 +15,33 @@ class CustomBatchSampler(Sampler):
 
         # Create a dictionary that maps image sizes to their indices
         self.size_to_indices = defaultdict(list)
-        for idx, (image, _) in enumerate(self.data_source):
-            size = image.size()
-            # Drop channel information
-            size = size[-2:]
-            # Consider binning strategy
-            if self.binning_strategy == 'smart':
-                # Smart binning: Sort image into bin of next bigger size
-                bin_size = self.pad_size_to_next_bin(size)
-            elif self.binning_strategy == 'strict':
-                # Strict binning: Every size forms its own bin
-                bin_size = size
-            self.size_to_indices[bin_size].append(idx)
+        if self.img_size_map is not None:
+            # Use img_size_map if available to avoid loading all images
+            for idx, iter_row in enumerate(self.img_size_map.iterrows()):
+                i, row = iter_row
+                size = row['pixelarr_shape']
+                # Consider binning strategy
+                if self.binning_strategy == 'smart':
+                    # Smart binning: Sort image into bin of next bigger size
+                    bin_size = self.pad_size_to_next_bin(size)
+                elif self.binning_strategy == 'strict':
+                    # Strict binning: Every size forms its own bin
+                    bin_size = size
+                #print("Storing", idx, "with size", size, "in bin", bin_size)
+                self.size_to_indices[bin_size].append(idx)
+        else:
+            for idx, (image, _) in enumerate(self.data_source):
+                size = image.size()
+                # Drop channel information
+                size = size[-2:]
+                # Consider binning strategy
+                if self.binning_strategy == 'smart':
+                    # Smart binning: Sort image into bin of next bigger size
+                    bin_size = self.pad_size_to_next_bin(size)
+                elif self.binning_strategy == 'strict':
+                    # Strict binning: Every size forms its own bin
+                    bin_size = size
+                self.size_to_indices[bin_size].append(idx)
         
         self.shuffle_batches()
 
@@ -42,6 +59,7 @@ class CustomBatchSampler(Sampler):
         if self.mode == 'train':
             for size in self.size_to_indices:
                 np.random.shuffle(self.size_to_indices[size])
+        
         # Create batches based on the dictionary of sizes and indices
         for indices in self.size_to_indices.values():
             for i in range(0, len(indices), self.batch_size):
