@@ -4,3 +4,4 @@ num_workers: 2
 persistent_workers: True
 pin_memory: True
 fix_inverted: True
+output_channels: 1

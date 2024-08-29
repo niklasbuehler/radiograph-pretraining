@@ -26,3 +26,9 @@ scheduler:
   warmup_start_lr: 1e-5
   warmup_epochs: 5
   max_epochs: 10
+
+#scheduler:
+#  _target_: src.optim.WarmupCosineAnnealingLR
+#  eta_min: 1e-5
+#  warmup_epochs: 5
+#  max_epochs: 10

@@ -64,7 +64,7 @@ class MRIDataModule(LightningDataModule):
         if self.batch_binning is not None:
             # Build img_size_map for faster processing in CustomBatchSampler
             img_size_map = data.df[['dsbase_index', 'pixelarr_shape']]
-            img_size_map = img_size_map.loc[:, ~img_size_map.columns.duplicated()].copy()
+            img_size_map = img_size_map.loc[:, ~img_size_map.columns.duplicated()]
             return CustomBatchSampler(data, batch_size=self.batch_size_per_device, mode=mode, binning_strategy=self.batch_binning, bins=self.batch_bins, img_size_map=img_size_map)
         else:
             return None

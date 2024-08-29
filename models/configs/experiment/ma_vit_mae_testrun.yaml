@@ -3,7 +3,7 @@
 defaults:
   - override /data: mri
   - override /model: vit_mae
-  - override /callbacks: mae
+  - override /callbacks: mae_no_checkpoints
   - override /trainer: gpu
   - override /logger: wandb
 
@@ -16,6 +16,7 @@ trainer:
   max_epochs: 1
   accumulate_grad_batches: 1 # 64 # effective batch size = 64*batch_size
   gradient_clip_val: 0.5
+  log_every_n_steps: 1
 
 model:
   optimizer:
@@ -28,16 +29,16 @@ model:
     - 0.95
 
 data:
-  total_data_size: 500
-  batch_size: 8
-  num_workers: 2
+  #total_data_size: 500
+  batch_size: 16
+  num_workers: 4
   persistent_workers: True
   #image_size: 3072
   #square: True
   #pad_to_multiple_of: 48 # = patch_size
   batch_binning: smart
   batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
-  output_channels: 1
+  #output_channels: 1
 
 logger:
   wandb:
