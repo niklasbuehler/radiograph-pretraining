@@ -30,7 +30,7 @@ model:
   compile: false
 
 data:
-  #total_data_size: 500
+  total_data_size: 500
   batch_size: 16
   num_workers: 32
   persistent_workers: True
