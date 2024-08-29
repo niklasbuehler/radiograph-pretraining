@@ -3,7 +3,7 @@
 defaults:
   - override /data: mri
   - override /model: vit_mae
-  - override /callbacks: mae
+  - override /callbacks: mae_no_checkpoints
   - override /trainer: gpu
   - override /logger: wandb
 
@@ -37,10 +37,12 @@ data:
   total_data_size: 10000
   batch_size: 16
   num_workers: 2
-  image_size: 3072
-  square: True
+  persistent_workers: True
+  #image_size: 3072
+  #square: True
   #pad_to_multiple_of: 48 # = patch_size
-  output_channels: 1
+  batch_binning: smart
+  batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
 
 logger:
   wandb:

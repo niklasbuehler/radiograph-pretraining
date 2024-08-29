@@ -12,12 +12,12 @@ class VisionTransformerMAE(LightningModule):
         optimizer: torch.optim.Optimizer = None,
         scheduler: torch.optim.lr_scheduler = None,
         compile: bool = False,
-        image_size = 224,
-        patch_size = 16,
-        hidden_size = 768,
-        intermediate_size = 3072,
-        mask_ratio = 0.75,
-        image_channels = 1,
+        image_size = None,
+        patch_size = None,
+        hidden_size = None,
+        intermediate_size = None,
+        mask_ratio = None,
+        image_channels = None,
     ) -> None:
         super().__init__()
         self.image_size = image_size
@@ -76,8 +76,8 @@ class VisionTransformerMAE(LightningModule):
         #print("Shape of inputs:", inputs["pixel_values"].size()) # [16, 3, 224, 224]
 
         # Detect black patches
-        black_patches_mask = self.detect_black_patches(x)
-        black_patches_mask_flat = black_patches_mask.view(x.size(0), -1) # (batch, num_patches)
+        #black_patches_mask = self.detect_black_patches(x)
+        #black_patches_mask_flat = black_patches_mask.view(x.size(0), -1) # (batch, num_patches)
 
         outputs = self(x)
         #print("Shape of outputs:", outputs.size()) # [16, 196, 768]
