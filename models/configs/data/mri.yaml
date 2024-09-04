@@ -1,7 +1,10 @@
 _target_: src.data.mri_datamodule.MRIDataModule
+df_name: clean_df_slim_frac
 cache: False
 num_workers: 2
 persistent_workers: True
 pin_memory: True
 fix_inverted: True
 output_channels: 1
+stratification_target: bodypart
+label: bodypart_idx

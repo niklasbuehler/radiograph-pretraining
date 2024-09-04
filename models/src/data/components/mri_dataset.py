@@ -42,7 +42,7 @@ if str(Path().resolve()) not in sys.path:
 import src.data.components.helpers as helpers
 
 class MRIDatasetBase(torch.utils.data.Dataset):
-    def __init__(self, size=224, square=False, output_channels=1, max_size_padoutside=None, pad_to_multiple_of=None, pad_to_bins=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/MRIDatasetBaseCache', df_name='clean_df_slim_frac', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
+    def __init__(self, size=224, square=False, output_channels=1, label="bodypart_idx", max_size_padoutside=None, pad_to_multiple_of=None, pad_to_bins=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/MRIDatasetBaseCache', df_name='clean_df_slim_frac', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
         """
         normalization_mode (float|'max'|None): None means no normalization is applied (the conversion to a float32 tensor nevertheless takes place), float: output is a 0-1-clipped normalization where >= normalization_mode quantile is 1
         """
@@ -52,6 +52,7 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         self.size = size
         self.square = square
         self.output_channels = output_channels
+        self.label = label
         self.projectdir = Path(projectdir)
         # max_size_padoutside overrides size setting if not None
         self.max_size_padoutside = max_size_padoutside
@@ -430,8 +431,9 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         curitem_series = self.df.loc[index]
         pixel_array = self._getpixelarray(index, curitem_series) if not self.no_pixelarray_loading else None
         res = dict(pixel_array=pixel_array, bodypart_idx=self.bodypart_to_idx[curitem_series['bodypart']])
-        if self.annotated:
+        if 'fracture_bool' in curitem_series:
             res['fracture'] = curitem_series['fracture']
+            res['fracture_bool'] = curitem_series['fracture_bool']
         if self.fracturepseudolabled:
             res['fracture_bestlabel'] = curitem_series['fracture_bestlabel']
         if self.return_df_row:
@@ -444,10 +446,10 @@ class MRIDatasetBase(torch.utils.data.Dataset):
     def __getitem__(self, index):
         if self.cache:
             item = self._getitem_innercached(index)
-            return item['pixel_array'].expand(self.output_channels, -1, -1), item['bodypart_idx']
+            return item['pixel_array'].expand(self.output_channels, -1, -1), item[self.label]
         else:
             item = self._getitem_inner(index)
-            return item['pixel_array'].expand(self.output_channels, -1, -1), item['bodypart_idx']
+            return item['pixel_array'].expand(self.output_channels, -1, -1), item[self.label]
 
 
 def order_points(pts):

@@ -25,6 +25,8 @@ class MRIDataModule(LightningDataModule):
             batch_binning: str = None,
             batch_bins: list[int] = None,
             fix_inverted: bool = False,
+            stratification_target = 'bodypart',
+            label = 'bodypart_idx',
     ) -> None:
         super().__init__()
         self.save_hyperparameters(logger=False)
@@ -42,6 +44,8 @@ class MRIDataModule(LightningDataModule):
         self.batch_binning = batch_binning
         self.batch_bins = batch_bins
         self.fix_inverted = fix_inverted
+        self.stratification_target = stratification_target
+        self.label = label
 
         self.data_train: Optional[torch.utils.data.Dataset] = None
         self.data_val: Optional[torch.utils.data.Dataset] = None
@@ -50,15 +54,15 @@ class MRIDataModule(LightningDataModule):
         self.setup()
 
     def prepare_data(self) -> None:
-        self.dsbase = MRIDatasetBase(required_cols=None, size=self.image_size, max_size_padoutside=self.image_size, square=self.square, pad_to_multiple_of=self.pad_to_multiple_of, pad_to_bins=self.batch_bins, output_channels=self.output_channels, df_name=self.df_name, cache=self.cache, total_size=self.total_data_size, fix_inverted=self.fix_inverted)
+        self.dsbase = MRIDatasetBase(label=self.label, required_cols=None, size=self.image_size, max_size_padoutside=self.image_size, square=self.square, pad_to_multiple_of=self.pad_to_multiple_of, pad_to_bins=self.batch_bins, output_channels=self.output_channels, df_name=self.df_name, cache=self.cache, total_size=self.total_data_size, fix_inverted=self.fix_inverted)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if not self.data_train and not self.data_val and not self.data_test:
             self.prepare_data()
 
-            self.data_train = MRIDataset(self.dsbase, 'train', seed=0, total_size=self.total_data_size)
-            self.data_val = MRIDataset(self.dsbase, 'val', seed=0, total_size=self.total_data_size)
-            self.data_test = MRIDataset(self.dsbase, 'test', seed=0, total_size=self.total_data_size)
+            self.data_train = MRIDataset(self.dsbase, 'train', seed=0, total_size=self.total_data_size, stratification_target=self.stratification_target)
+            self.data_val = MRIDataset(self.dsbase, 'val', seed=0, total_size=self.total_data_size, stratification_target=self.stratification_target)
+            self.data_test = MRIDataset(self.dsbase, 'test', seed=0, total_size=self.total_data_size, stratification_target=self.stratification_target)
     
     def get_batch_sampler(self, data, mode=None):
         if self.batch_binning is not None:
