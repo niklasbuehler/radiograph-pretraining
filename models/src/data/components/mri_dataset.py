@@ -42,7 +42,7 @@ if str(Path().resolve()) not in sys.path:
 import src.data.components.helpers as helpers
 
 class MRIDatasetBase(torch.utils.data.Dataset):
-    def __init__(self, size=224, square=False, output_channels=1, label="bodypart_idx", max_size_padoutside=None, pad_to_multiple_of=None, pad_to_bins=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/MRIDatasetBaseCache', df_name='clean_df_slim_frac', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
+    def __init__(self, size=224, square=False, output_channels=1, label="bodypart_idx", max_size_padoutside=None, pad_to_multiple_of=None, pad_to_bins=None, annotated=False, fracturepseudolabled=False, basedir='/home/buehlern/Documents/Masterarbeit/data', projectdir='/home/buehlern/Documents/Masterarbeit', required_cols='auto', cache=False, diskcache_reldir='../../../neocortex-nas/buehlern/Masterarbeit/MRIDatasetBaseCache', df_name='df_min', diskcache_reldir_autoappend=True, return_df_row=False, return_custom_cols=(), normalization_mode=0.99, bodypartexamined_mappingloc='data/BodyPartExamined_mappings_mergemore.json', bodypartexamined_dropna=False, clean_brightedges=False, clean_rotation=False, merge_scapula_shoulder=False, no_pixelarray_loading=False, total_size=None, fix_inverted=False, ratelimiting=False):
         """
         normalization_mode (float|'max'|None): None means no normalization is applied (the conversion to a float32 tensor nevertheless takes place), float: output is a 0-1-clipped normalization where >= normalization_mode quantile is 1
         """
@@ -431,9 +431,13 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         curitem_series = self.df.loc[index]
         pixel_array = self._getpixelarray(index, curitem_series) if not self.no_pixelarray_loading else None
         res = dict(pixel_array=pixel_array, bodypart_idx=self.bodypart_to_idx[curitem_series['bodypart']])
-        if 'fracture_bool' in curitem_series:
+        bool_map = {'YES': True, 'NO': False, 'Unsure': float('NaN')}
+        if 'fracture' in curitem_series:
             res['fracture'] = curitem_series['fracture']
-            res['fracture_bool'] = curitem_series['fracture_bool']
+            res['fracture_bool'] = bool_map[curitem_series['fracture']]
+        if 'foreignmaterial' in curitem_series:
+            res['foreignmaterial'] = curitem_series['foreignmaterial']
+            res['foreignmaterial_bool'] = bool_map[curitem_series['foreignmaterial']]
         if self.fracturepseudolabled:
             res['fracture_bestlabel'] = curitem_series['fracture_bestlabel']
         if self.return_df_row:
@@ -509,7 +513,7 @@ class MRIDataset(torch.utils.data.Dataset):
             print('WARN: GENERATING NEW TRAINVAL TEST SPLIT')
             patientid_to_strattarget = {patientid: sorted(set(subdf[stratification_target]),
                                                           key=lambda x: stratification_target_frequencies.loc[x])[0]
-                                        for patientid, subdf in self.df.groupby('dcm_PatientID')}
+                                        for patientid, subdf in self.df.groupby('patientid')}
 
             _, test = train_test_split(list(patientid_to_strattarget.keys()),
                                        test_size=test_size, stratify=list(patientid_to_strattarget.values()), random_state=0)
@@ -517,7 +521,7 @@ class MRIDataset(torch.utils.data.Dataset):
             test_patientids.to_csv(split_test_loc)
         test_patientids = pd.read_csv(split_test_loc, index_col=0)
 
-        patientid_index_df = self.df.set_index('dcm_PatientID')
+        patientid_index_df = self.df.set_index('patientid')
         #print("patientid_index_df.index", len(patientid_index_df.index))
         #print("test_patientids['0']", len(test_patientids['0']))
         assert set(patientid_index_df.index).issuperset(test_patientids['0'])
@@ -527,20 +531,20 @@ class MRIDataset(torch.utils.data.Dataset):
             if modeset == {'test'}:
                 # remove trainval
                 self.df = self.df.loc[test_idxs]
-                assert len(set(self.df['dcm_PatientID']) - set(test_patientids['0'])) == 0
-            assert len(set(self.df['dcm_PatientID']) & set(test_patientids['0'])) == len(test_patientids)
+                assert len(set(self.df['patientid']) - set(test_patientids['0'])) == 0
+            assert len(set(self.df['patientid']) & set(test_patientids['0'])) == len(test_patientids)
         else:
             for idx in test_idxs:
                 if idx not in self.df.index:
                     print(idx, "not in index!")
             self.df = self.df.drop(test_idxs)
-            assert len(set(self.df['dcm_PatientID']) & set(test_patientids['0'])) == 0
+            assert len(set(self.df['patientid']) & set(test_patientids['0'])) == 0
 
-        patientid_index_df = self.df.set_index('dcm_PatientID')
+        patientid_index_df = self.df.set_index('patientid')
         if ('train' in modeset or 'val' in modeset) and not ('train' in modeset and 'val' in modeset):
             patientid_to_strattarget = {patientid: sorted(set(subdf[stratification_target]),
                                                           key=lambda x: stratification_target_frequencies.loc[x])[0]
-                                        for patientid, subdf in self.df.groupby('dcm_PatientID')}
+                                        for patientid, subdf in self.df.groupby('patientid')}
                 
             train, val = train_test_split(list(patientid_to_strattarget.keys()),
                                           test_size=val_size, stratify=list(patientid_to_strattarget.values()), random_state=seed)
@@ -550,12 +554,12 @@ class MRIDataset(torch.utils.data.Dataset):
             if 'val' in modeset:
                 # since not both, only keep the val ones
                 self.df = self.df.loc[val_idxs]
-                assert len(set(self.df['dcm_PatientID']) & set(val_patientids['0'])) == len(val_patientids)
-                assert len(set(self.df['dcm_PatientID']) - set(val_patientids['0'])) == 0
+                assert len(set(self.df['patientid']) & set(val_patientids['0'])) == len(val_patientids)
+                assert len(set(self.df['patientid']) - set(val_patientids['0'])) == 0
             else:
                 self.df = self.df.drop(val_idxs)
-                assert len(set(self.df['dcm_PatientID']) & set(train_patientids['0'])) == len(train_patientids)
-                assert len(set(self.df['dcm_PatientID']) & set(val_patientids['0'])) == 0
+                assert len(set(self.df['patientid']) & set(train_patientids['0'])) == len(train_patientids)
+                assert len(set(self.df['patientid']) & set(val_patientids['0'])) == 0
 
         if extra_filter is not None:
             self.df = extra_filter(self.df)

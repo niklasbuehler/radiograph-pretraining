@@ -1,5 +1,5 @@
 _target_: src.data.mri_datamodule.MRIDataModule
-df_name: clean_df_slim_frac
+df_name: df_min
 cache: False
 num_workers: 2
 persistent_workers: True
