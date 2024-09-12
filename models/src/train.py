@@ -124,11 +124,14 @@ def main(cfg: DictConfig) -> Optional[float]:
     extras(cfg)
 
     # train the model
-    with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
+    tracing = False
+    if tracing:
+        with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
+            metric_dict, _ = train(cfg)
+        dt = datetime.datetime.now()
+        prof.export_chrome_trace(f"/home/buehlern/Documents/Masterarbeit/models/logs/traces/trace-{dt}.json")
+    else:
         metric_dict, _ = train(cfg)
-    
-    dt = datetime.datetime.now()
-    prof.export_chrome_trace(f"/home/buehlern/Documents/Masterarbeit/models/logs/traces/trace-{dt}.json")
 
     # safely retrieve metric value for hydra-based hyperparameter optimization
     metric_value = get_metric_value(
