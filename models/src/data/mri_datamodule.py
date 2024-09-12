@@ -73,7 +73,7 @@ class MRIDataModule(LightningDataModule):
                 total_size=self.total_data_size,
                 stratification_target=self.stratification_target)
 
-    def setup(self) -> None:
+    def setup(self, stage: Optional[str] = None) -> None:
         if not self.data_train and not self.data_val and not self.data_test:
             self.prepare_data()
 

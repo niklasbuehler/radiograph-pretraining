@@ -36,11 +36,9 @@ data:
   total_data_size: 10000
   batch_size: 1
   num_workers: 2
-  persistent_workers: true
-  image_size: 3072
-  square: True
+  persistent_workers: True
+  max_size_padoutside: 3072
   #pad_to_multiple_of: 48 # = patch_size
-  output_channels: 1
 
 logger:
   wandb:

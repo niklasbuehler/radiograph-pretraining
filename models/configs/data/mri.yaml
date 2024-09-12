@@ -1,10 +1,10 @@
 _target_: src.data.mri_datamodule.MRIDataModule
-df_name: df_min
-cache: False
-num_workers: 2
+# batch_size
+num_workers: 64
 persistent_workers: True
 pin_memory: True
-fix_inverted: True
+df_name: df_min
+# max_size_padoutside, pad_to_multiple_of or batch_binning
 output_channels: 1
-stratification_target: bodypart
-label: bodypart_idx
+fix_inverted: True
+# label

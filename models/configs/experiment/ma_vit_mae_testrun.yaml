@@ -33,9 +33,6 @@ data:
   batch_size: 16
   num_workers: 1
   persistent_workers: True
-  #image_size: 3072
-  #square: True
-  #pad_to_multiple_of: 48 # = patch_size
   batch_binning: smart
   batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
 
