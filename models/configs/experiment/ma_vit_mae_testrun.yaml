@@ -15,7 +15,6 @@ trainer:
   min_epochs: 1 # prevents early stopping
   max_epochs: 1
   accumulate_grad_batches: 1 # 64 # effective batch size = 64*batch_size
-  gradient_clip_val: 0.5
   log_every_n_steps: 1
 
 model:

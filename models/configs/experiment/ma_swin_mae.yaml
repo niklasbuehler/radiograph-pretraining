@@ -15,7 +15,6 @@ trainer:
   min_epochs: 1 # prevents early stopping
   max_epochs: 10
   accumulate_grad_batches: 1024
-  gradient_clip_val: 0.5
 
 model:
   optimizer:
