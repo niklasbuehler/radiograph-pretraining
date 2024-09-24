@@ -13,7 +13,7 @@ seed: 12345
 
 trainer:
   min_epochs: 1 # prevents early stopping
-  max_epochs: 1
+  max_epochs: 3
   accumulate_grad_batches: 1 # 64 # effective batch size = 64*batch_size
   log_every_n_steps: 1
 
@@ -26,15 +26,17 @@ model:
     betas:
     - 0.9
     - 0.95
-  compile: true
+  compile: false
 
 data:
-  total_data_size: 10000
+  #df_name: df_min_ft_test_114
+  total_data_size: 1000
   batch_size: 16
-  num_workers: 1
+  num_workers: 64
   persistent_workers: True
   batch_binning: smart
   batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
+  label: fracture
 
 logger:
   wandb:

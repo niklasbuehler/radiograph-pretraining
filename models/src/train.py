@@ -111,7 +111,7 @@ def train(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 def main(cfg: DictConfig) -> Optional[float]:
 
     # Custom configurations
-    mp.set_start_method("spawn", force=True)
+    mp.set_start_method("forkserver", force=True)
     torch.set_float32_matmul_precision("medium")
 
     """Main entry point for training.

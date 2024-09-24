@@ -207,7 +207,6 @@ class MRIDataset(torch.utils.data.Dataset):
         modeset = set(mode.split('+'))
         self.modeset = modeset
 
-        
         self.df = dsbase.df.copy()
         self.df.reset_index(names='dsbase_index', inplace=True)
 
