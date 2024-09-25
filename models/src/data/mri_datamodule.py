@@ -27,6 +27,8 @@ class MRIDataModule(LightningDataModule):
             fix_inverted: bool = True,
             label: str = 'bodypart',
             stratification_target: str = None,
+            val_size: float = 0.05,
+            test_size: float = 0.15,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(logger=False)
@@ -52,7 +54,10 @@ class MRIDataModule(LightningDataModule):
         if self.stratification_target is None:
             print(f"Using label {self.label} as stratification_target")
             self.stratification_target = label
+        self.val_size = val_size
+        self.test_size = test_size
 
+        self.dsbase: torch.utils.data.Dataset = None
         self.data_train: torch.utils.data.Dataset = None
         self.data_val: torch.utils.data.Dataset = None
         self.data_test: torch.utils.data.Dataset = None
@@ -60,34 +65,135 @@ class MRIDataModule(LightningDataModule):
         self.setup()
 
     def prepare_data(self) -> None:
-        self.dsbase = MRIDatasetBase(
-                basedir = self.basedir,
-                df_name=self.df_name,
-                max_size_padoutside=self.max_size_padoutside,
-                pad_to_multiple_of=self.pad_to_multiple_of,
-                pad_to_bins=self.batch_bins,
-                normalization_mode=self.normalization_mode,
-                fix_inverted=self.fix_inverted,
-                label=self.label,
-                output_channels=self.output_channels,
-                total_size=self.total_data_size,
-                stratification_target=self.stratification_target)
+        if not self.dsbase:
+            self.dsbase = MRIDatasetBase(
+                    basedir = self.basedir,
+                    df_name=self.df_name,
+                    max_size_padoutside=self.max_size_padoutside,
+                    pad_to_multiple_of=self.pad_to_multiple_of,
+                    pad_to_bins=self.batch_bins,
+                    normalization_mode=self.normalization_mode,
+                    fix_inverted=self.fix_inverted,
+                    label=self.label,
+                    output_channels=self.output_channels,
+                    total_size=self.total_data_size,
+                    stratification_target=self.stratification_target)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if not self.data_train and not self.data_val and not self.data_test:
             self.prepare_data()
 
-            self.data_train = MRIDataset(self.dsbase, 'train', stratification_target=self.stratification_target, total_size=self.total_data_size, seed=0)
-            self.data_val = MRIDataset(self.dsbase, 'val', stratification_target=self.stratification_target, total_size=self.total_data_size, seed=0)
-            self.data_test = MRIDataset(self.dsbase, 'test', stratification_target=self.stratification_target, total_size=self.total_data_size, seed=0)
+            split_test_loc = self.generate_trainval_test_split()
+
+            print(f"Getting train indices...")
+            train_indices = self.get_split_df(split_test_loc, 'train')
+            print(f"Done. Train len: {len(train_indices)}")
+            print(f"Getting val indices...")
+            val_indices = self.get_split_df(split_test_loc, 'val')
+            print(f"Done. Val len: {len(val_indices)}")
+            print(f"Getting test indices...")
+            test_indices = self.get_split_df(split_test_loc, 'test')
+            print(f"Done. Test len: {len(test_indices)}")
+
+            print(f"Initializing train dataset...")
+            self.data_train = MRIDataset(self.dsbase, train_indices)
+            print(f"Done.")
+            print(f"Initializing val dataset...")
+            self.data_val = MRIDataset(self.dsbase, val_indices)
+            print(f"Done.")
+            print(f"Initializing test dataset...")
+            self.data_test = MRIDataset(self.dsbase, test_indices)
+            print(f"Done.")
     
+    def generate_trainval_test_split(self, seed: int = 42):
+        # If multiple stratification target values for the same patient, use the rarest one for stratification
+        # This computation is always performed globally
+        stratification_target_frequencies = self.dsbase.df[self.stratification_target].value_counts()
+
+        size_suffix = f"_size_{self.total_data_size}" if self.total_data_size is not None else ""
+        split_test_loc = self.dsbase.basedir / Path(f'splits/split_test_{self.dsbase.df_name}_straton_{self.stratification_target}{size_suffix}.csv')
+        if not split_test_loc.exists():
+            res = input(
+                f'WARN: NO TRAINVAL TEST SPLIT FOUND AT {split_test_loc}, type YES[enter] to generate one: ')
+            if res.strip() != 'YES':
+                exit(1)
+
+            print('WARN: GENERATING NEW TRAINVAL TEST SPLIT')
+            patientid_to_strattarget = {patientid: sorted(set(subdf[self.stratification_target]),
+                                                          key=lambda x: stratification_target_frequencies.loc[x])[0]
+                                        for patientid, subdf in self.dsbase.df.groupby('patientid')}
+
+            _, test = train_test_split(list(patientid_to_strattarget.keys()),
+                                       test_size=self.test_size, stratify=list(patientid_to_strattarget.values()), random_state=seed)
+            test_patientids = pd.DataFrame(test)
+            test_patientids.to_csv(split_test_loc)
+
+        #test_patientids = pd.read_csv(split_test_loc, index_col=0)
+
+        return split_test_loc
+
+    def get_split_df(self, split_test_loc: str, mode: str):
+        if not mode in ['train', 'val', 'test', 'train+val', 'train+val+test']:
+            raise ValueError(f"Invalid MRIDataset mode: {mode}")
+        modeset = set(mode.split('+'))
+
+        # If multiple stratification target values for the same patient, use the rarest one for stratification
+        # This computation is always performed globally
+        stratification_target_frequencies = self.dsbase.df[self.stratification_target].value_counts()
+
+        df = self.dsbase.df
+
+        test_patientids = pd.read_csv(split_test_loc, index_col=0)
+
+        patientid_index_df = df.set_index('patientid')
+        assert set(patientid_index_df.index).issuperset(test_patientids['0'])
+        test_idxs = patientid_index_df.loc[test_patientids['0']]['dsbase_index']
+
+        if 'test' in modeset:
+            print('WARN: Including test data')
+            if modeset == {'test'}:
+                # remove trainval
+                df = df.loc[test_idxs]
+                assert len(set(df['patientid']) - set(test_patientids['0'])) == 0
+            assert len(set(df['patientid']) & set(test_patientids['0'])) == len(test_patientids)
+        else:
+            for idx in test_idxs:
+                if idx not in df.index:
+                    print(idx, "not in index!")
+            df = df.drop(test_idxs)
+            assert len(set(df['patientid']) & set(test_patientids['0'])) == 0
+
+        if ('train' in modeset or 'val' in modeset) and not ('train' in modeset and 'val' in modeset):
+            patientid_to_strattarget = {patientid: sorted(set(subdf[self.stratification_target]),
+                                                          key=lambda x: stratification_target_frequencies.loc[x])[0]
+                                        for patientid, subdf in df.groupby('patientid')}
+                
+            train, val = train_test_split(list(patientid_to_strattarget.keys()),
+                                          test_size=self.val_size, stratify=list(patientid_to_strattarget.values()), random_state=42)
+            train_patientids = pd.DataFrame(train).rename(columns={0: '0'})
+            val_patientids = pd.DataFrame(val).rename(columns={0: '0'})
+            val_idxs = patientid_index_df.loc[val_patientids['0']]['dsbase_index']
+            if 'val' in modeset:
+                # since not both, only keep the val ones
+                df = df.loc[val_idxs]
+                assert len(set(df['patientid']) & set(val_patientids['0'])) == len(val_patientids)
+                assert len(set(df['patientid']) - set(val_patientids['0'])) == 0
+            else:
+                df = df.drop(val_idxs)
+                assert len(set(df['patientid']) & set(train_patientids['0'])) == len(train_patientids)
+                assert len(set(df['patientid']) & set(val_patientids['0'])) == 0
+        
+        return df['dsbase_index']
+
     def get_batch_sampler(self, data, mode=None):
         if self.batch_binning is not None:
-            # Build img_size_map for faster processing in CustomBatchSampler
-            img_size_map = data.df[['dsbase_index', 'pixelarr_shape']]
-            img_size_map = img_size_map.loc[:, ~img_size_map.columns.duplicated()]
-            img_size_map.reset_index(inplace=True)
-            return CustomBatchSampler(data, batch_size=self.batch_size, mode=mode, binning_strategy=self.batch_binning, bins=self.batch_bins, img_size_map=img_size_map)
+            # Build pixelarr_shapes for faster processing in CustomBatchSampler
+            pixelarr_shapes = self.dsbase.df['pixelarr_shape']
+            pixelarr_shapes = pixelarr_shapes.iloc[data.indices]
+            return CustomBatchSampler(
+                data, batch_size=self.batch_size, mode=mode,
+                binning_strategy=self.batch_binning, bins=self.batch_bins,
+                pixelarr_shapes=pixelarr_shapes, prepend_max_size_batch=True)
         else:
             return None
 

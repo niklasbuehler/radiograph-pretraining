@@ -74,7 +74,8 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         df = df.dropna(subset=[self.label])
         
         df = df.sort_values('path')
-        df = df.reset_index(drop=True)
+        #df = df.reset_index(drop=True)
+        df['dsbase_index'] = df.index
 
         self.label_to_idx = {
             lbl: i for i, lbl in enumerate(sorted(set(df[label])))
@@ -185,106 +186,23 @@ class MRIDataset(torch.utils.data.Dataset):
     def __init__(
             self,
             dsbase: MRIDatasetBase,
-            mode: str,
-            stratification_target: str,
-            total_size: int,
-            val_size: float = 0.05,
-            test_size: float = 0.15,
-            seed: int = 42):
+            indices: pd.DataFrame):
         super().__init__()
         self.dsbase = dsbase
-        self.mode = mode
-        self.stratification_target = stratification_target
-        self.seed = seed
-        self.val_size = val_size
-        self.test_size = test_size
-        self.total_size = total_size
-
-        print(f"Initializing MRIDataset(mode={self.mode})...")
-
-        if not mode in ['train', 'val', 'test', 'train+val', 'train+val+test']:
-            raise ValueError(f"Invalid MRIDataset mode: {mode}")
-        modeset = set(mode.split('+'))
-        self.modeset = modeset
-
-        self.df = dsbase.df.copy()
-        self.df.reset_index(names='dsbase_index', inplace=True)
-
-        # If multiple stratification target values for the same patient, use the rarest one for stratification
-        # This computation is always performed globally
-        stratification_target_frequencies = dsbase.df[stratification_target].value_counts()
-
-        size_suffix = f"_size_{self.total_size}" if self.total_size is not None else ""
-        split_test_loc = self.dsbase.basedir / Path(f'splits/split_test_{self.dsbase.df_name}_straton_{stratification_target}{size_suffix}.csv')
-        if not split_test_loc.exists():
-            res = input(
-                f'WARN: NO TRAINVAL TEST SPLIT FOUND AT {split_test_loc}, type YES[enter] to generate one: ')
-            if res.strip() != 'YES':
-                self.df = None
-                exit(1)
-
-            print('WARN: GENERATING NEW TRAINVAL TEST SPLIT')
-            patientid_to_strattarget = {patientid: sorted(set(subdf[stratification_target]),
-                                                          key=lambda x: stratification_target_frequencies.loc[x])[0]
-                                        for patientid, subdf in self.df.groupby('patientid')}
-
-            _, test = train_test_split(list(patientid_to_strattarget.keys()),
-                                       test_size=test_size, stratify=list(patientid_to_strattarget.values()), random_state=0)
-            test_patientids = pd.DataFrame(test)
-            test_patientids.to_csv(split_test_loc)
-        test_patientids = pd.read_csv(split_test_loc, index_col=0)
-
-        patientid_index_df = self.df.set_index('patientid')
-        assert set(patientid_index_df.index).issuperset(test_patientids['0'])
-        test_idxs = patientid_index_df.loc[test_patientids['0']]['dsbase_index']
-        if 'test' in modeset:
-            print('WARN: Including test data')
-            if modeset == {'test'}:
-                # remove trainval
-                self.df = self.df.loc[test_idxs]
-                assert len(set(self.df['patientid']) - set(test_patientids['0'])) == 0
-            assert len(set(self.df['patientid']) & set(test_patientids['0'])) == len(test_patientids)
-        else:
-            for idx in test_idxs:
-                if idx not in self.df.index:
-                    print(idx, "not in index!")
-            self.df = self.df.drop(test_idxs)
-            assert len(set(self.df['patientid']) & set(test_patientids['0'])) == 0
-
-        patientid_index_df = self.df.set_index('patientid')
-        if ('train' in modeset or 'val' in modeset) and not ('train' in modeset and 'val' in modeset):
-            patientid_to_strattarget = {patientid: sorted(set(subdf[stratification_target]),
-                                                          key=lambda x: stratification_target_frequencies.loc[x])[0]
-                                        for patientid, subdf in self.df.groupby('patientid')}
-                
-            train, val = train_test_split(list(patientid_to_strattarget.keys()),
-                                          test_size=val_size, stratify=list(patientid_to_strattarget.values()), random_state=seed)
-            train_patientids = pd.DataFrame(train).rename(columns={0: '0'})
-            val_patientids = pd.DataFrame(val).rename(columns={0: '0'})
-            val_idxs = patientid_index_df.loc[val_patientids['0']]['dsbase_index']
-            if 'val' in modeset:
-                # since not both, only keep the val ones
-                self.df = self.df.loc[val_idxs]
-                assert len(set(self.df['patientid']) & set(val_patientids['0'])) == len(val_patientids)
-                assert len(set(self.df['patientid']) - set(val_patientids['0'])) == 0
-            else:
-                self.df = self.df.drop(val_idxs)
-                assert len(set(self.df['patientid']) & set(train_patientids['0'])) == len(train_patientids)
-                assert len(set(self.df['patientid']) & set(val_patientids['0'])) == 0
-        
-        print(self, 'initialized')
+        self.indices = indices
 
     def __len__(self):
-        return len(self.df)
+        return len(self.indices)
 
     def __repr__(self) -> str:
-        return f'MRIDataset(mode={self.mode}, len={len(self.df)})'
+        return f'MRIDataset(len={len(self.indices)})'
 
     def __str__(self) -> str:
         return repr(self)
 
     def __getitem__(self, index):
-        return self.dsbase[self.df.iloc[index]['dsbase_index']]
+        return self.dsbase[self.indices.iloc[index]]
+
 
     def getrow(self, index):
-        return self.df.iloc[index]
+        return self.indices.iloc[index]
