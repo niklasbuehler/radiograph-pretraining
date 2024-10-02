@@ -190,12 +190,18 @@ class MRIDataModule(LightningDataModule):
             # Build pixelarr_shapes for faster processing in CustomBatchSampler
             pixelarr_shapes = self.dsbase.df['pixelarr_shape']
             pixelarr_shapes = pixelarr_shapes.iloc[data.indices]
+            pixelarr_shapes = pixelarr_shapes.reset_index(drop=True)
             return CustomBatchSampler(
                 data, batch_size=self.batch_size, mode=mode,
                 binning_strategy=self.batch_binning, bins=self.batch_bins,
-                pixelarr_shapes=pixelarr_shapes, prepend_max_size_batch=True)
+                pixelarr_shapes=pixelarr_shapes, prepend_max_size_batch=True,
+                drop_last=False)
         else:
             return None
+
+    def collate(self, batch):
+        print("Collate", [item[0].shape for item in batch])
+        return torch.utils.data.default_collate(batch)
 
     def train_dataloader(self) -> DataLoader[Any]:
         if self.batch_binning is not None:
@@ -207,6 +213,7 @@ class MRIDataModule(LightningDataModule):
                 batch_sampler=self.get_batch_sampler(self.data_train, mode='train'),
                 #shuffle=True,
                 #batch_size=self.batch_size
+                #collate_fn=self.collate,
             )
             print("DataLoader length", len(dl))
             return dl
@@ -218,7 +225,8 @@ class MRIDataModule(LightningDataModule):
                 pin_memory=self.pin_memory,
                 #batch_sampler=self.get_batch_sampler(self.data_train, mode='train'),
                 shuffle=True,
-                batch_size=self.batch_size
+                batch_size=self.batch_size,
+                #collate_fn=self.collate,
             )
             print("DataLoader length", len(dl))
             return dl
@@ -233,6 +241,7 @@ class MRIDataModule(LightningDataModule):
                 batch_sampler=self.get_batch_sampler(self.data_val, mode='val'),
                 #shuffle=False,
                 #batch_size=self.batch_size
+                #collate_fn=self.collate,
             )
         else:
             return DataLoader(
@@ -242,7 +251,8 @@ class MRIDataModule(LightningDataModule):
                 pin_memory=self.pin_memory,
                 #batch_sampler=self.get_batch_sampler(self.data_val),
                 shuffle=False,
-                batch_size=self.batch_size
+                batch_size=self.batch_size,
+                #collate_fn=self.collate,
             )
 
     def test_dataloader(self) -> DataLoader[Any]:
@@ -255,6 +265,7 @@ class MRIDataModule(LightningDataModule):
                 batch_sampler=self.get_batch_sampler(self.data_test, mode='test'),
                 #shuffle=False,
                 #batch_size=self.batch_size
+                #collate_fn=self.collate,
             )
         else:
             return DataLoader(
@@ -264,5 +275,6 @@ class MRIDataModule(LightningDataModule):
                 pin_memory=self.pin_memory,
                 #batch_sampler=self.get_batch_sampler(self.data_test),
                 shuffle=False,
-                batch_size=self.batch_size
+                batch_size=self.batch_size,
+                #collate_fn=self.collate,
             )

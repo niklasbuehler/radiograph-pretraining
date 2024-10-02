@@ -132,6 +132,7 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         # Padding and resizing
         if self.pad_to_bins is not None:
             # Pad the image to next bin size
+            old_shape = pixel_array.shape
             height, width = pixel_array.shape[-2:]
             new_width = next((w for w in self.pad_to_bins if w >= width), width)
             new_height = next((h for h in self.pad_to_bins if h >= height), height)
@@ -143,8 +144,8 @@ class MRIDatasetBase(torch.utils.data.Dataset):
             missing_rows = new_height - pixel_array.shape[-2]
             pad_top = missing_rows // 2
             pad_bottom = sum(divmod(missing_rows, 2))
-
             pixel_array = F.pad(pixel_array, [0, pad_left+pad_right, 0, pad_top+pad_bottom])
+            #print(f"Padded {old_shape} to {pixel_array.shape}")
         elif self.pad_to_multiple_of is not None:
             # Pad the image to the next bigger multiple of pad_to_multiple_of
             missing_cols = (self.pad_to_multiple_of - pixel_array.shape[-1] % self.pad_to_multiple_of) % self.pad_to_multiple_of
@@ -171,7 +172,7 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         return pixel_array
 
     def _getitem_inner(self, index):
-        curitem_series = self.df.loc[index]
+        curitem_series = self.df.iloc[index]
         pixel_array = self._getpixelarray(curitem_series)
         res = dict(pixel_array=pixel_array, label=self.label_to_idx[curitem_series[self.label]])
         return res
@@ -201,6 +202,7 @@ class MRIDataset(torch.utils.data.Dataset):
         return repr(self)
 
     def __getitem__(self, index):
+        #print("Dataset index", index, "->", self.indices.iloc[index])
         return self.dsbase[self.indices.iloc[index]]
 
 

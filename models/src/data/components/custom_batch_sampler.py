@@ -4,7 +4,7 @@ from collections import defaultdict
 import numpy as np
 
 class CustomBatchSampler(Sampler):
-    def __init__(self, data_source, batch_size, mode, binning_strategy, bins=None, pixelarr_shapes=None, prepend_max_size_batch=False):
+    def __init__(self, data_source, batch_size, mode, binning_strategy, bins=None, pixelarr_shapes=None, prepend_max_size_batch=False, drop_last=False):
         self.data_source = data_source
          # use pixelarr_shapes extracted from dataframe to avoid having to open every image for filling the bins 
         self.pixelarr_shapes = pixelarr_shapes
@@ -13,6 +13,7 @@ class CustomBatchSampler(Sampler):
         self.binning_strategy = binning_strategy
         self.bins = sorted(bins) # Only used in combination with 'smart' binning strategy
         self.prepend_max_size_batch = prepend_max_size_batch
+        self.drop_last = drop_last
 
         # Create a dict that maps image shapes to indices of images with shape
         print(f"Generating shape_to_indices dict in CustomBatchSampler...")
@@ -30,6 +31,7 @@ class CustomBatchSampler(Sampler):
                 #print("Storing index", i, "of image with shape", shape, "in bin", bin_shape)
                 self.shape_to_indices[bin_shape].append(i)
         else:
+            print("WARN: No pixelarr_shapes dict available")
             for i, (image, _) in enumerate(self.data_source):
                 shape = image.size()
                 # Drop channel information
@@ -83,7 +85,7 @@ class CustomBatchSampler(Sampler):
                 batch = indices[i:i + self.batch_size]
 
                 # Similar to 'drop last' in the PyTorch DataLoader
-                if self.mode == 'train' and len(batch) < self.batch_size:
+                if self.mode == 'train' and len(batch) < self.batch_size and self.drop_last:
                     continue
                 
                 self.batches.append(batch)
@@ -99,6 +101,9 @@ class CustomBatchSampler(Sampler):
     def __iter__(self):
         self.shuffle_batches()
         for batch in self.batches:
+            #print("Batch", batch, "with shapes",
+            #        [self.pixelarr_shapes.iloc[b_idx] for b_idx in batch],
+            #        "->", [self.pad_shape_to_next_bin(self.pixelarr_shapes.iloc[b_idx]) for b_idx in batch])
             yield batch
 
     def __len__(self):
