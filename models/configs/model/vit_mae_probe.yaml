@@ -1,4 +1,4 @@
-_target_: src.models.vit_mae_probe_module.MAEFineProbeBodyPartClassifier
+_target_: src.models.vit_mae_probe_module.MAEFineProbeClassifier
 
 optimizer:
   _target_: torch.optim.Adam

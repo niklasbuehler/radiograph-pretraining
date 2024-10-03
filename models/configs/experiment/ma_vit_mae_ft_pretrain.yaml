@@ -13,7 +13,7 @@ seed: 12345
 
 trainer:
   min_epochs: 1 # prevents early stopping
-  max_epochs: 3
+  max_epochs: 10
   accumulate_grad_batches: 64 # effective batch size = 64*batch_size
   log_every_n_steps: 1
 
@@ -27,17 +27,16 @@ model:
     - 0.9
     - 0.95
   scheduler:
-    warmup_epochs: 1
-    max_epochs: 3
+    warmup_epochs: 5
+    max_epochs: 10
   compile: false
 
 data:
-  df_name: df_min_ft_test_114
-  #total_data_size: 1000
+  #df_name: df_min_ft_test_114
+  df_name: df_min_ft_pt_10k
   batch_size: 16
-  num_workers: 1
+  num_workers: 4
   persistent_workers: True
-  #pad_to_multiple_of: 48
   batch_binning: smart
   batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
   label: bodypart

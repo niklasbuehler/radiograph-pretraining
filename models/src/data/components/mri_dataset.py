@@ -16,6 +16,7 @@ class MRIDatasetBase(torch.utils.data.Dataset):
             pad_to_multiple_of: int,
             pad_to_bins: list[int],
             normalization_mode: float | str,
+            downsampling: float,
             fix_inverted: bool,
             label: str,
             output_channels: int,
@@ -41,6 +42,9 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         # None: no normalization is applied (still converted to float32 tensor)
         # float: output is a 0-1-clipped normalization where >= normalization_mode quantile is 1
         self.normalization_mode = normalization_mode
+
+        # Whether or not to downsample every image
+        self.downsampling = downsampling
         
         # Whether or not the inverted flag in the dataframe should be used to fix inverted images
         self.fix_inverted = fix_inverted
@@ -128,6 +132,10 @@ class MRIDatasetBase(torch.utils.data.Dataset):
             inverted = curitem_series['inverted']
             if inverted:
                 pixel_array = torch.max(pixel_array) - pixel_array
+
+        # Downsampling
+        if self.downsampling:
+            pixel_array = F.interpolate(pixel_array, scale_factor=self.downsampling)
 
         # Padding and resizing
         if self.pad_to_bins is not None:

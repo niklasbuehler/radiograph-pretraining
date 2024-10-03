@@ -22,6 +22,7 @@ class MRIDataModule(LightningDataModule):
             batch_binning: str = None,
             batch_bins: list[int] = [1152, 1536, 1920, 2304, 2688, 3072],
             normalization_mode: float | str = 'max',
+            downsampling: float = None,
             output_channels: int = 1,
             total_data_size: int = None,
             fix_inverted: bool = True,
@@ -46,6 +47,10 @@ class MRIDataModule(LightningDataModule):
         # None: no normalization is applied (still converted to float32 tensor)
         # float: output is a 0-1-clipped normalization where >= normalization_mode quantile is 1
         self.normalization_mode = normalization_mode
+        self.downsampling = downsampling
+        # Downsample batch_bins
+        if self.downsampling:
+            self.batch_bins = [int(bin * self.downsampling) for bin in self.batch_bins]
         self.output_channels = output_channels
         self.total_data_size = total_data_size
         self.fix_inverted = fix_inverted
@@ -73,6 +78,7 @@ class MRIDataModule(LightningDataModule):
                     pad_to_multiple_of=self.pad_to_multiple_of,
                     pad_to_bins=self.batch_bins,
                     normalization_mode=self.normalization_mode,
+                    downsampling=self.downsampling,
                     fix_inverted=self.fix_inverted,
                     label=self.label,
                     output_channels=self.output_channels,
@@ -191,6 +197,8 @@ class MRIDataModule(LightningDataModule):
             pixelarr_shapes = self.dsbase.df['pixelarr_shape']
             pixelarr_shapes = pixelarr_shapes.iloc[data.indices]
             pixelarr_shapes = pixelarr_shapes.reset_index(drop=True)
+            if self.downsampling:
+                pixelarr_shapes = pixelarr_shapes.apply(lambda shape: (shape[0]*self.downsampling, shape[1]*self.downsampling))
             return CustomBatchSampler(
                 data, batch_size=self.batch_size, mode=mode,
                 binning_strategy=self.batch_binning, bins=self.batch_bins,

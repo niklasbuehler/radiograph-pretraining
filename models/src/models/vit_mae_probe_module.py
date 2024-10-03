@@ -8,7 +8,7 @@ from torchmetrics.classification.accuracy import Accuracy
 from torchmetrics import MaxMetric, MeanMetric
 from src.models.vit_mae_module import VisionTransformerMAE
 
-class MAEFineProbeBodyPartClassifier(LightningModule):
+class MAEFineProbeClassifier(LightningModule):
     def __init__(self, num_classes: int, optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler, mae_checkpoint: str, seq_mean: bool, compile: bool):
         super().__init__()
 
@@ -125,7 +125,7 @@ class MAEFineProbeBodyPartClassifier(LightningModule):
     
     def setup(self, stage: str) -> None:
         if self.hparams.compile and stage == "fit":
-            self.net = torch.compile(self.net
+            self.net = torch.compile(self.net)
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.classifier.parameters())

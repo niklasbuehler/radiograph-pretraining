@@ -1,0 +1,7 @@
+# @package _global_
+
+defaults:
+  - ma_vit_mae_ft_pretrain
+
+data:
+  downsampling: 0.5
