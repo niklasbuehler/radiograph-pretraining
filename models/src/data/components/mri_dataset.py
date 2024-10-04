@@ -117,6 +117,12 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         # Add batch dim
         pixel_array = torch.tensor(pixel_array, dtype=torch.float32)[None]
 
+        # Fix inverted scans
+        if self.fix_inverted:
+            inverted = curitem_series['inverted']
+            if inverted:
+                pixel_array = torch.max(pixel_array) - pixel_array
+
         # Normalize
         if self.normalization_mode == None:
             pixel_array = pixel_array.to(torch.float32)
@@ -127,15 +133,11 @@ class MRIDatasetBase(torch.utils.data.Dataset):
                 pixel_array /= np.quantile(pixel_array, self.normalization_mode)
                 pixel_array = np.clip(pixel_array, 0, 1)
 
-        # Fix inverted scans
-        if self.fix_inverted:
-            inverted = curitem_series['inverted']
-            if inverted:
-                pixel_array = torch.max(pixel_array) - pixel_array
-
         # Downsampling
         if self.downsampling:
+            pixel_array = pixel_array.unsqueeze(0)
             pixel_array = F.interpolate(pixel_array, scale_factor=self.downsampling)
+            pixel_array = pixel_array.squeeze(0)
 
         # Padding and resizing
         if self.pad_to_bins is not None:

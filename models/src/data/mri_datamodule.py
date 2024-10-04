@@ -51,6 +51,7 @@ class MRIDataModule(LightningDataModule):
         # Downsample batch_bins
         if self.downsampling:
             self.batch_bins = [int(bin * self.downsampling) for bin in self.batch_bins]
+            print(f"Downsampling batch_bins by factor {self.downsampling} to", self.batch_bins)
         self.output_channels = output_channels
         self.total_data_size = total_data_size
         self.fix_inverted = fix_inverted
@@ -197,8 +198,9 @@ class MRIDataModule(LightningDataModule):
             pixelarr_shapes = self.dsbase.df['pixelarr_shape']
             pixelarr_shapes = pixelarr_shapes.iloc[data.indices]
             pixelarr_shapes = pixelarr_shapes.reset_index(drop=True)
+            # Downsample pixelarr_shapes dict as well
             if self.downsampling:
-                pixelarr_shapes = pixelarr_shapes.apply(lambda shape: (shape[0]*self.downsampling, shape[1]*self.downsampling))
+                pixelarr_shapes = pixelarr_shapes.apply(lambda shape: (int(shape[0]*self.downsampling), int(shape[1]*self.downsampling)))
             return CustomBatchSampler(
                 data, batch_size=self.batch_size, mode=mode,
                 binning_strategy=self.batch_binning, bins=self.batch_bins,
