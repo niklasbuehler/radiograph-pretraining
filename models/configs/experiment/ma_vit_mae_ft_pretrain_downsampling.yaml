@@ -4,9 +4,9 @@ defaults:
   - ma_vit_mae_ft_pretrain
   
 trainer:
-  accumulate_grad_batches: 128 # keep the same effective batch_size
+  accumulate_grad_batches: 16 # keep the same effective batch_size
 
 data:
   downsampling: 0.5
-  batch_size: 8 # half batch size (due to memory constraints)
-  num_workers: 4
+  batch_size: 64 # double batch size
+  num_workers: 16

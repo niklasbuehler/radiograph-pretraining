@@ -7,28 +7,31 @@ defaults:
   - override /trainer: gpu
 #  - override /logger: wandb
 
+callbacks:
+  model_checkpoint:
+    every_n_epochs: 10
+
 tags: ["ma", "mri", "vit", "mae", "ft_test_pretrain"]
 
 seed: 12345
 
 trainer:
   min_epochs: 1 # prevents early stopping
-  max_epochs: 10
+  max_epochs: 30
   accumulate_grad_batches: 64 # effective batch size = 64*batch_size
-  log_every_n_steps: 1
 
 model:
   optimizer:
     _target_: torch.optim.AdamW
     _partial_: true
-    lr: 1.5e-4
+    lr: 1e-4
     weight_decay: 0.05
     betas:
     - 0.9
     - 0.95
   scheduler:
-    warmup_epochs: 5
-    max_epochs: 10
+    warmup_epochs: 1
+    max_epochs: 30
   compile: false
 
 data:

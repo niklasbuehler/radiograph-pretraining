@@ -8,35 +8,48 @@ from torchmetrics.classification.accuracy import Accuracy
 from torchmetrics import MaxMetric, MeanMetric
 from src.models.vit_mae_module import VisionTransformerMAE
 
-class MAEFineProbeClassifier(LightningModule):
-    def __init__(self, num_classes: int, optimizer: torch.optim.Optimizer, scheduler: torch.optim.lr_scheduler, mae_checkpoint: str, seq_mean: bool, compile: bool):
+class ViTMAELinearProbingClassifier(LightningModule):
+    def __init__(
+        self,
+        optimizer: torch.optim.Optimizer = None,
+        scheduler: torch.optim.lr_scheduler = None,
+        compile: bool = False,
+        mae_checkpoint: str = None,
+        num_classes: int = None,
+        freeze_encoder: bool = False,
+        mean_pooling: bool = True
+    ) -> None:
         super().__init__()
-
-        self.save_hyperparameters(logger=False)
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+        self.compile = compile
+        self.mae_checkpoint = mae_checkpoint
+        self.num_classes = num_classes
+        self.freeze_encoder = freeze_encoder
+        self.mean_pooling = mean_pooling
+        self.save_hyperparameters()
 
         # Load the pre-trained ViT MAE model
-        print("checkpoint path", mae_checkpoint)
+        print("Loading checkpoint from", mae_checkpoint)
         self.mae_model = VisionTransformerMAE.load_from_checkpoint(mae_checkpoint)
         # Disable masking
         self.mae_model.net.config.mask_ratio = 0
-        #self.image_processor = self.mae_model.image_processor
-
         # Discard the decoder
         self.mae_model.net.decoder = None
 
-        # Freeze the encoder
-        for param in self.mae_model.net.vit.encoder.parameters():
-            param.requires_grad = False
+        self.mae_model.to(self.device)
 
         # Add a new fully connected layer for classification
-        self.seq_mean = seq_mean
         hidden_size = self.mae_model.net.config.hidden_size # 768
-        #num_patches = 50 # with masking! is _not_ equal to self.mae_model.net.vit.embeddings.num_patches
-        num_patches = self.mae_model.net.vit.embeddings.num_patches # 197
-        last_dim = hidden_size * (num_patches+1) # +1 for the mask token
-        if self.seq_mean:
-            last_dim = hidden_size
-        self.classifier = nn.Linear(last_dim, num_classes)
+        self.classifier = nn.Linear(hidden_size, num_classes)
+
+        # (Un)freeze the encoder
+        for param in self.mae_model.net.vit.encoder.parameters():
+            param.requires_grad = not freeze_encoder
+
+        # Set the classifier to trainable
+        for param in self.classifier.parameters():
+            param.requires_grad = True
 
         self.criterion = nn.CrossEntropyLoss()
 
@@ -52,23 +65,18 @@ class MAEFineProbeClassifier(LightningModule):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Forward pass through the encoder of the ViT MAE model
-        with torch.no_grad():
-            #inputs = self.image_processor(x, return_tensors="pt").to(self.device) # BatchFeature
-            inputs = x.to(self.device)
-            #latent = self.mae_model.net.vit(**inputs).last_hidden_state
-            latent = self.mae_model.net.vit(inputs).last_hidden_state
+        inputs = x.to(self.device)
+        embeddings = self.mae_model.net.vit(inputs, interpolate_pos_encoding=True).last_hidden_state
 
-        #print("latent:", latent.size()) # [32, 50, 768]
-        # sequence length is regarding patches?
-        # if yes, it makes more sense to flatten
-        if self.seq_mean:
-            embeddings = latent.mean(dim=1)
+        encoder_output = None
+        if self.mean_pooling:
+            encoder_output = torch.mean(embeddings, 1)
         else:
-            embeddings = latent.flatten(start_dim=1)
-        #print("embeddings:", embeddings.size()) # mean: [32, 768], flatten: [32, 38400], flatten+nomask: [128, 151296]
+            # Extract CLS token
+            encoder_output = embeddings[:, 0, :]
 
         # Forward pass through the classifier
-        logits = self.classifier(embeddings)
+        logits = self.classifier(encoder_output)
 
         return logits
 
@@ -76,10 +84,7 @@ class MAEFineProbeClassifier(LightningModule):
         self, batch: Tuple[torch.Tensor, torch.Tensor]
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         x, y = batch
-        #print("x:", x.size()) # [32, 3, 384, 384]
         logits = self.forward(x)
-        #print("logits:", logits.size()) # [32, 9]
-        #print("y:", y.size()) # [32]
         loss = self.criterion(logits, y)
         preds = torch.argmax(logits, dim=1)
         return loss, preds, y
@@ -128,7 +133,8 @@ class MAEFineProbeClassifier(LightningModule):
             self.net = torch.compile(self.net)
 
     def configure_optimizers(self) -> Dict[str, Any]:
-        optimizer = self.hparams.optimizer(params=self.classifier.parameters())
+        optimizer = self.hparams.optimizer(params=[{"params": self.mae_model.parameters()},
+                                                    {"params": self.classifier.parameters()}])
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
             return {
