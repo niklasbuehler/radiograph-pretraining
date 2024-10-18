@@ -5,7 +5,7 @@ defaults:
   - override /model: vit_mae
   - override /callbacks: mae_no_checkpoints
   - override /trainer: gpu
-#  - override /logger: wandb
+  - override /logger: wandb
 
 tags: ["ma", "mri", "vit", "mae", "testrun"]
 

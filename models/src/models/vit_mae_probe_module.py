@@ -17,7 +17,7 @@ class ViTMAELinearProbingClassifier(LightningModule):
         mae_checkpoint: str = None,
         num_classes: int = None,
         freeze_encoder: bool = False,
-        mean_pooling: bool = True
+        mean_pooling: bool = True,
     ) -> None:
         super().__init__()
         self.optimizer = optimizer

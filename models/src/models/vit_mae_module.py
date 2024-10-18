@@ -127,12 +127,13 @@ class VisionTransformerMAE(LightningModule):
         optimizer = self.hparams.optimizer(params=self.net.parameters())
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
+            print(scheduler)
             return {
                 "optimizer": optimizer,
                 "lr_scheduler": {
                     "scheduler": scheduler,
-                    "monitor": "val/loss",
-                    "interval": "epoch",
+                    "monitor": "train/loss",
+                    "interval": "step",
                     "frequency": 1,
                 },
             }

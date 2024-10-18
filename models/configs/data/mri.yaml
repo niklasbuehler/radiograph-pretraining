@@ -1,6 +1,6 @@
 _target_: src.data.mri_datamodule.MRIDataModule
 # batch_size
-num_workers: 64
+num_workers: 4
 persistent_workers: True
 pin_memory: True
 df_name: df_min

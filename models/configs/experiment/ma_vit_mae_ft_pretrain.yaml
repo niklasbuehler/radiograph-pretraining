@@ -5,7 +5,7 @@ defaults:
   - override /model: vit_mae
   - override /callbacks: mae_last_checkpoint_only
   - override /trainer: gpu
-#  - override /logger: wandb
+  - override /logger: wandb
 
 callbacks:
   model_checkpoint:
