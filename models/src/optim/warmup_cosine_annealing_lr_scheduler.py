@@ -11,7 +11,7 @@ class WarmupCosineAnnealingLR(_LRScheduler):
     def get_lr(self):
         if self.last_epoch < self.warmup_steps:
             # Linear warmup
-            lr = [base_lr * (self.last_epoch + 1) / self.warmup_steps for base_lr in self.base_lrs]
+            lr = [self.eta_min + base_lr * (self.last_epoch + 1) / self.warmup_steps for base_lr in self.base_lrs]
             #print("Step", self.last_epoch, "(warmup). lr:", lr)
             return lr
         else:

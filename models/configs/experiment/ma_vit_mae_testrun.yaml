@@ -12,9 +12,9 @@ tags: ["ma", "mri", "vit", "mae", "testrun"]
 seed: 12345
 
 trainer:
-  min_epochs: 1 # prevents early stopping
+  min_epochs: 1
   max_epochs: 3
-  accumulate_grad_batches: 64 # effective batch size = 64*batch_size
+  accumulate_grad_batches: 64
   log_every_n_steps: 1
 
 model:
@@ -26,11 +26,9 @@ model:
     betas:
     - 0.9
     - 0.95
-  compile: true
+  compile: false
 
 data:
-  #df_name: df_min_ft_test_114
-  #total_data_size: 1000
   batch_size: 16
   num_workers: 1
   persistent_workers: True

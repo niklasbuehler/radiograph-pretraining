@@ -12,9 +12,9 @@ tags: ["ma", "mri", "vit", "mae"]
 seed: 12345
 
 trainer:
-  min_epochs: 1 # prevents early stopping
-  max_epochs: 3
-  accumulate_grad_batches: 64 # effective batch size = 64*batch_size
+  min_epochs: 1
+  max_epochs: 10
+  accumulate_grad_batches: 64
 
 model:
   compile: false
@@ -27,15 +27,14 @@ model:
     - 0.9
     - 0.95
   scheduler:
-    # These parameters should be invariant under same batch_size and accumulate_grad_batches:
-    warmup_steps: 504 # 32276/64*1 = num_train_batches / grad_acc * warmup_epochs
-    max_steps: 1512 # = 32276/64*3 = num_train_batches / grad_acc * total_epochs
-
+    # These parameters should be invariant under same effective batch_size
+    # (batch_size & accumulate_grad_batches)
+    warmup_steps: 2520 # 32276/64*5 = num_train_batches / grad_acc * warmup_epochs
+    max_steps: 5040 # = 32276/64*10 = num_train_batches / grad_acc * total_epochs
 
 data:
-  #df_name: df_min_ft_pt_10k
-  batch_size: 16
-  num_workers: 4
+  batch_size: 16 # Make sure to adapt accumulate_grad_batches
+  num_workers: 32
   batch_binning: smart
   batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
   val_size: 0.05

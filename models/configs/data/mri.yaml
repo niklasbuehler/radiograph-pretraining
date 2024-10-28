@@ -7,4 +7,3 @@ df_name: df_min
 # max_size_padoutside, pad_to_multiple_of or batch_binning
 output_channels: 1
 fix_inverted: True
-# label

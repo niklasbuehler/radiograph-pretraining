@@ -12,9 +12,9 @@ tags: ["ma", "mri", "vit", "mae", "hparams"]
 seed: 12345
 
 trainer:
-  min_epochs: 1 # prevents early stopping
+  min_epochs: 1
   max_epochs: 5
-  accumulate_grad_batches: 64 # effective batch size = 64*batch_size
+  accumulate_grad_batches: 64
   
 model:
   optimizer:
@@ -25,17 +25,18 @@ model:
     betas:
     - 0.9
     - 0.95
-  scheduler:
-    _target_: pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR
-    _partial_: true
-    warmup_start_lr: 1e-5
-    warmup_epochs: 5
-    max_epochs: 5
+  # For hparam search, just use same lr scheduling as with full training (compare within warmup phasess)
+  #scheduler:
+  #  _target_: pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR
+  #  _partial_: true
+  #  warmup_start_lr: 1e-5
+  #  warmup_epochs: 5
+  #  max_epochs: 5
 
 data:
   total_data_size: 10000
   batch_size: 16
-  num_workers: 64
+  num_workers: 4
   batch_binning: smart
   batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
 

@@ -78,7 +78,7 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         df = df.dropna(subset=[self.label])
         
         df = df.sort_values('path')
-        #df = df.reset_index(drop=True)
+        df = df.reset_index(drop=True)
         df['dsbase_index'] = df.index
 
         self.label_to_idx = {
