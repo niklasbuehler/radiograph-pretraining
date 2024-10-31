@@ -1,0 +1,37 @@
+# @package _global_
+
+defaults:
+  - override /data: mri
+  - override /model: vit_mae_probe
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: wandb
+
+tags: ["ma", "mri", "vit", "mae", "ft", "bp", "hparams"]
+
+seed: 12345
+
+trainer:
+  min_epochs: 1
+  max_epochs: 10
+  accumulate_grad_batches: 64
+
+model:
+  optimizer:
+    lr: 1e-4
+  num_classes: 14 # bodypart labels
+  freeze_encoder: true
+  mean_pooling: false
+
+data:
+  df_name: df_min_ft_pt_10k
+  batch_size: 1
+  num_workers: 4
+  batch_binning: smart
+  batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
+  val_size: 0.1
+  test_size: 0.15
+
+logger:
+  wandb:
+    tags: ${tags}

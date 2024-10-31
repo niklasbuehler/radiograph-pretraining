@@ -1,0 +1,21 @@
+# @package _global_
+
+# hyperparameter optimization:
+# python train.py -m hparams_search=ma_vit_mae_ft_bp_basic experiment=ma_vit_mae_ft_bp_hparams
+
+defaults:
+  - override /hydra/sweeper: basic
+
+# choose metric which will be optimized
+# make sure this is the correct name of some metric logged in lightning module!
+optimized_metric: "val/acc"
+
+# here we define the hyperparameter search
+# it optimizes for value returned from function with @hydra.main decorator
+hydra:
+  mode: "MULTIRUN" # set hydra to multirun by default if this config is attached
+
+  sweeper:
+    # define hyperparameter search space
+    params:
+      model.optimizer.lr: 0.003, 0.001, 0.0003, 0.0001 #, 0.00003, 0.00001, 0.000003, 0.000001

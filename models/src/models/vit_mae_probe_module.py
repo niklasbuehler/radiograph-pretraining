@@ -16,8 +16,8 @@ class ViTMAELinearProbingClassifier(LightningModule):
         compile: bool = False,
         mae_checkpoint: str = None,
         num_classes: int = None,
-        freeze_encoder: bool = False,
-        mean_pooling: bool = True,
+        freeze_encoder: bool = True,
+        mean_pooling: bool = False,
     ) -> None:
         super().__init__()
         self.optimizer = optimizer
@@ -96,8 +96,8 @@ class ViTMAELinearProbingClassifier(LightningModule):
 
         self.train_loss(loss)
         self.train_acc(preds, targets)
-        self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train/loss", self.train_loss, on_epoch=True, prog_bar=True)
+        self.log("train/acc", self.train_acc, on_epoch=True, prog_bar=True)
 
         return loss
 
@@ -109,21 +109,21 @@ class ViTMAELinearProbingClassifier(LightningModule):
 
         self.val_loss(loss)
         self.val_acc(preds, targets)
-        self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/loss", self.val_loss, on_epoch=True, prog_bar=True)
+        self.log("val/acc", self.val_acc, on_epoch=True, prog_bar=True)
 
     def on_validation_epoch_end(self) -> None:
         acc = self.val_acc.compute()
         self.val_acc_best(acc)
-        self.log("val/acc_best", self.val_acc_best.compute(), sync_dist=True, prog_bar=True)
+        self.log("val/acc_best", self.val_acc_best.compute(), sync_dist=True, prog_bar=True, logger=True)
 
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
         loss, preds, targets = self.model_step(batch)
 
         self.test_loss(loss)
         self.test_acc(preds, targets)
-        self.log("test/loss", self.test_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("test/acc", self.test_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("test/loss", self.test_loss, on_epoch=True, prog_bar=True)
+        self.log("test/acc", self.test_acc, on_epoch=True, prog_bar=True)
 
     def on_test_epoch_end(self) -> None:
         pass
@@ -133,8 +133,11 @@ class ViTMAELinearProbingClassifier(LightningModule):
             self.net = torch.compile(self.net)
 
     def configure_optimizers(self) -> Dict[str, Any]:
-        optimizer = self.hparams.optimizer(params=[{"params": self.mae_model.parameters()},
-                                                    {"params": self.classifier.parameters()}])
+        if self.freeze_encoder:
+            params = self.classifier.parameters()
+        else:
+            params = [{"params": self.mae_model.parameters()}, {"params": self.classifier.parameters()}]
+        optimizer = self.hparams.optimizer(params=params)
         if self.hparams.scheduler is not None:
             scheduler = self.hparams.scheduler(optimizer=optimizer)
             return {
