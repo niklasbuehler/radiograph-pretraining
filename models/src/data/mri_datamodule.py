@@ -103,13 +103,13 @@ class MRIDataModule(LightningDataModule):
             print(f"Done. Test len: {len(test_indices)}")
 
             print(f"Initializing train dataset...")
-            self.data_train = MRIDataset(self.dsbase, train_indices)
+            self.data_train = MRIDataset(self.dsbase, train_indices, 'train')
             print(f"Done.")
             print(f"Initializing val dataset...")
-            self.data_val = MRIDataset(self.dsbase, val_indices)
+            self.data_val = MRIDataset(self.dsbase, val_indices, 'val')
             print(f"Done.")
             print(f"Initializing test dataset...")
-            self.data_test = MRIDataset(self.dsbase, test_indices)
+            self.data_test = MRIDataset(self.dsbase, test_indices, 'test')
             print(f"Done.")
     
     def generate_trainval_test_split(self, seed: int = 42):

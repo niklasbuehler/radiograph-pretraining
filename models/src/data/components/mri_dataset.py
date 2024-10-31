@@ -6,6 +6,8 @@ import functools
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import torch.nn.functional as F
+import random
+import torchvision.transforms.functional as TF
 
 class MRIDatasetBase(torch.utils.data.Dataset):
     def __init__(
@@ -197,10 +199,12 @@ class MRIDataset(torch.utils.data.Dataset):
     def __init__(
             self,
             dsbase: MRIDatasetBase,
-            indices: pd.DataFrame):
+            indices: pd.DataFrame,
+            mode: str):
         super().__init__()
         self.dsbase = dsbase
         self.indices = indices
+        self.mode = mode
 
     def __len__(self):
         return len(self.indices)
@@ -212,9 +216,34 @@ class MRIDataset(torch.utils.data.Dataset):
         return repr(self)
 
     def __getitem__(self, index):
-        #print("Dataset index", index, "->", self.indices.iloc[index])
-        return self.dsbase[self.indices.iloc[index]]
+        pixel_array, label = self.dsbase[self.indices.iloc[index]]
+        
+        # Random augmentations during training
+        if self.mode == 'train':
+            # Random Rotation
+            if random.random() < 0.5:
+                angle = random.uniform(-45, 45)
+                pixel_array = TF.rotate(pixel_array, angle)
+            
+            # Random Horizontal Flip
+            if random.random() < 0.5:
+                pixel_array = TF.hflip(pixel_array)
 
+            # Random Cropping (10% margin)
+            crop_scale = random.uniform(0.9, 1.0)
+            _, h, w = pixel_array.shape
+            new_h, new_w = int(h * crop_scale), int(w * crop_scale)
+            top = random.randint(0, h - new_h)
+            left = random.randint(0, w - new_w)
+            pixel_array = pixel_array[:, top:top + new_h, left:left + new_w]
+            pixel_array = TF.resize(pixel_array, (h, w))
+            
+            # Gamma Correction
+            if random.random() < 0.5:
+                gamma = random.uniform(0.5, 1.5)
+                pixel_array = TF.adjust_gamma(pixel_array, gamma)
+        
+        return pixel_array, label
 
     def getrow(self, index):
         return self.indices.iloc[index]
