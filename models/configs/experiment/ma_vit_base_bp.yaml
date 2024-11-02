@@ -16,9 +16,14 @@ trainer:
   max_epochs: 50
   accumulate_grad_batches: 64 # = effective batch size for fine-tuning
 
+early_stopping:
+  monitor: "val/acc"
+  patience: 10
+  mode: "max"
+
 model:
   optimizer:
-    lr: 0.00003
+    lr: 0.0001
   num_classes: 14 # bodypart labels
 
 data:

@@ -21,5 +21,6 @@ early_stopping:
   patience: 100
   mode: "max"
 
+
 model_summary:
   max_depth: -1
