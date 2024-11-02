@@ -29,9 +29,10 @@ model:
   compile: false
 
 data:
+  train_augmentations: false
   batch_size: 16
   num_workers: 1
-  persistent_workers: True
+  persistent_workers: true
   batch_binning: smart
   batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
   label: bodypart

@@ -26,6 +26,7 @@ class MRIDataModule(LightningDataModule):
             output_channels: int = 1,
             total_data_size: int = None,
             fix_inverted: bool = True,
+            train_augmentations: bool = False,
             label: str = 'bodypart',
             stratification_target: str = None,
             val_size: float = 0.05,
@@ -55,6 +56,7 @@ class MRIDataModule(LightningDataModule):
         self.output_channels = output_channels
         self.total_data_size = total_data_size
         self.fix_inverted = fix_inverted
+        self.train_augmentations = train_augmentations
         self.label = label
         self.stratification_target = stratification_target
         if self.stratification_target is None:
@@ -103,13 +105,13 @@ class MRIDataModule(LightningDataModule):
             print(f"Done. Test len: {len(test_indices)}")
 
             print(f"Initializing train dataset...")
-            self.data_train = MRIDataset(self.dsbase, train_indices, 'train')
+            self.data_train = MRIDataset(self.dsbase, train_indices, self.train_augmentations)
             print(f"Done.")
             print(f"Initializing val dataset...")
-            self.data_val = MRIDataset(self.dsbase, val_indices, 'val')
+            self.data_val = MRIDataset(self.dsbase, val_indices, False)
             print(f"Done.")
             print(f"Initializing test dataset...")
-            self.data_test = MRIDataset(self.dsbase, test_indices, 'test')
+            self.data_test = MRIDataset(self.dsbase, test_indices, False)
             print(f"Done.")
     
     def generate_trainval_test_split(self, seed: int = 42):

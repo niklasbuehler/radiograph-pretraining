@@ -25,6 +25,7 @@ model:
 
 data:
   df_name: df_min_ft_pt_10k
+  train_augmentations: true
   batch_size: 1
   num_workers: 4
   pad_to_multiple_of: 48

@@ -35,6 +35,7 @@ model:
 
 data:
   total_data_size: 10000
+  train_augmentations: false
   batch_size: 16
   num_workers: 4
   batch_binning: smart

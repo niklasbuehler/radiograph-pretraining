@@ -200,11 +200,11 @@ class MRIDataset(torch.utils.data.Dataset):
             self,
             dsbase: MRIDatasetBase,
             indices: pd.DataFrame,
-            mode: str):
+            augmentations: bool):
         super().__init__()
         self.dsbase = dsbase
         self.indices = indices
-        self.mode = mode
+        self.augmentations = augmentations
 
     def __len__(self):
         return len(self.indices)
@@ -219,7 +219,7 @@ class MRIDataset(torch.utils.data.Dataset):
         pixel_array, label = self.dsbase[self.indices.iloc[index]]
         
         # Random augmentations during training
-        if self.mode == 'train':
+        if self.augmentations:
             # Random Rotation
             if random.random() < 0.5:
                 angle = random.uniform(-45, 45)

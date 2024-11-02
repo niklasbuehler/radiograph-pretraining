@@ -33,6 +33,7 @@ model:
     max_steps: 5040 # = 32276/64*10 = num_train_batches / grad_acc * total_epochs
 
 data:
+  train_augmentations: false
   batch_size: 16 # Make sure to adapt accumulate_grad_batches
   num_workers: 32
   batch_binning: smart
