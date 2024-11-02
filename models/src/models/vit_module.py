@@ -5,8 +5,7 @@ from lightning import LightningModule
 from torch import nn
 from torchmetrics.classification.accuracy import Accuracy
 from torchmetrics import MaxMetric, MeanMetric
-from torchvision.models import vision_transformer, ViT_B_16_Weights
-
+from transformers import ViTForImageClassification
 
 class VisionTransformerBodyPartClassifier(LightningModule):
     def __init__(
@@ -20,12 +19,9 @@ class VisionTransformerBodyPartClassifier(LightningModule):
 
         self.save_hyperparameters(logger=False)
 
-        # Load plain Vision Transformer model from torchvision
-        self.net = vision_transformer.vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1)
-
-        # Manually reset the last layer of the pretrained model
-        num_ftrs = self.net.heads[-1].in_features
-        self.net.heads[-1] = nn.Linear(num_ftrs, num_classes)
+        self.net = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224")
+        # Replace the pretrained classifier
+        self.net.classifier = nn.Linear(self.net.config.hidden_size, num_classes)
 
         self.criterion = torch.nn.CrossEntropyLoss()
 
@@ -40,7 +36,7 @@ class VisionTransformerBodyPartClassifier(LightningModule):
         self.val_acc_best = MaxMetric()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.net(x)
+        return self.net(x, interpolate_pos_encoding=True).logits
 
     def model_step(
         self, batch: Tuple[torch.Tensor, torch.Tensor]
