@@ -86,7 +86,7 @@ class MRIDatasetBase(torch.utils.data.Dataset):
         self.label_to_idx = {
             lbl: i for i, lbl in enumerate(sorted(set(df[label])))
         }
-        self.idx_to_bodypart = {
+        self.idx_to_label = {
             i: lbl for i, lbl in enumerate(sorted(set(df[label])))
         }
 

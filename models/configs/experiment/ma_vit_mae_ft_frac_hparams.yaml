@@ -1,0 +1,40 @@
+# @package _global_
+
+defaults:
+  - override /data: mri
+  - override /model: vit_mae_probe
+  - override /callbacks: default
+  - override /trainer: gpu
+  - override /logger: wandb
+
+tags: ["ma", "mri", "vit", "mae", "ft", "frac", "hparams"]
+
+seed: 12345
+
+trainer:
+  min_epochs: 1
+  max_epochs: 10
+  accumulate_grad_batches: 64
+
+model:
+  optimizer:
+    lr: 0.00003
+  num_classes: 2 # fracture YES/NO
+  freeze_encoder: false
+  mean_pooling: false
+
+data:
+  df_name: df_min_ft
+  label: fracture
+  train_augmentations: true
+  batch_size: 1
+  num_workers: 4
+  pad_to_multiple_of: 48
+  #batch_binning: smart
+  #batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
+  val_size: 0.1
+  test_size: 0.15
+
+logger:
+  wandb:
+    tags: ${tags}
