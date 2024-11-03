@@ -6,8 +6,7 @@ import functools
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import torch.nn.functional as F
-import random
-import torchvision.transforms.functional as TF
+import torchio as tio
 
 class MRIDatasetBase(torch.utils.data.Dataset):
     def __init__(
@@ -220,29 +219,31 @@ class MRIDataset(torch.utils.data.Dataset):
         
         # Random augmentations during training
         if self.augmentations:
-            # Random Rotation
-            if random.random() < 0.5:
-                angle = random.uniform(-45, 45)
-                pixel_array = TF.rotate(pixel_array, angle)
             
-            # Random Horizontal Flip
-            if random.random() < 0.5:
-                pixel_array = TF.hflip(pixel_array)
+            augmentations = []
 
-            # Random Cropping (10% margin)
-            crop_scale = random.uniform(0.9, 1.0)
-            _, h, w = pixel_array.shape
-            new_h, new_w = int(h * crop_scale), int(w * crop_scale)
-            top = random.randint(0, h - new_h)
-            left = random.randint(0, w - new_w)
-            pixel_array = pixel_array[:, top:top + new_h, left:left + new_w]
-            pixel_array = TF.resize(pixel_array, (h, w))
+            # Random rotation (up to 45 degrees)
+            augmentations.append(tio.RandomAffine(degrees=(0, 45), p=0.5))
             
-            # Gamma Correction
-            if random.random() < 0.5:
-                gamma = random.uniform(0.5, 1.5)
-                pixel_array = TF.adjust_gamma(pixel_array, gamma)
-        
+            # Random horizontal flip
+            augmentations.append(tio.RandomFlip(axes=(1,), flip_probability=0.5))
+            
+            # Random gamma correction
+            augmentations.append(tio.RandomGamma(log_gamma=(0.5, 1.5), p=0.5))
+
+            # Random noise injection
+            augmentations.append(tio.RandomNoise(mean=0, std=0.1, p=0.3))
+
+            # Random bias field (smooth intensity variation)
+            augmentations.append(tio.RandomBiasField(coefficients=0.5, p=0.3))
+            
+            # Random blur
+            augmentations.append(tio.RandomBlur(p=0.3))
+
+            transform = tio.Compose(augmentations)
+
+            pixel_array = transform(pixel_array.unsqueeze(3)).squeeze(3)
+
         return pixel_array, label
 
     def getrow(self, index):

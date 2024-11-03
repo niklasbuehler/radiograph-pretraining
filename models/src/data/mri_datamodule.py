@@ -6,7 +6,6 @@ from torch.utils.data import DataLoader, random_split
 
 from src.data.components.mri_dataset import *
 from src.data.components.custom_batch_sampler import *
-#from custom_batch_sampler import *
 
 class MRIDataModule(LightningDataModule):
     def __init__(
