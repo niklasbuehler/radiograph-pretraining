@@ -205,6 +205,14 @@ class MRIDataset(torch.utils.data.Dataset):
         self.indices = indices
         self.augmentations = augmentations
 
+        self.transform = tio.Compose([
+            tio.RandomAffine(degrees=(0, 45), p=0.5),
+            tio.RandomFlip(axes=(1,), flip_probability=0.5),
+            tio.RandomGamma(log_gamma=(0.5, 1.5), p=0.5),
+            tio.RandomNoise(mean=0, std=0.1, p=0.3),
+            tio.RandomBiasField(coefficients=0.5, p=0.3),
+            tio.RandomBlur(p=0.3)])
+
     def __len__(self):
         return len(self.indices)
 
@@ -219,30 +227,7 @@ class MRIDataset(torch.utils.data.Dataset):
         
         # Random augmentations during training
         if self.augmentations:
-            
-            augmentations = []
-
-            # Random rotation (up to 45 degrees)
-            augmentations.append(tio.RandomAffine(degrees=(0, 45), p=0.5))
-            
-            # Random horizontal flip
-            augmentations.append(tio.RandomFlip(axes=(1,), flip_probability=0.5))
-            
-            # Random gamma correction
-            augmentations.append(tio.RandomGamma(log_gamma=(0.5, 1.5), p=0.5))
-
-            # Random noise injection
-            augmentations.append(tio.RandomNoise(mean=0, std=0.1, p=0.3))
-
-            # Random bias field (smooth intensity variation)
-            augmentations.append(tio.RandomBiasField(coefficients=0.5, p=0.3))
-            
-            # Random blur
-            augmentations.append(tio.RandomBlur(p=0.3))
-
-            transform = tio.Compose(augmentations)
-
-            pixel_array = transform(pixel_array.unsqueeze(3)).squeeze(3)
+            pixel_array = self.transform(pixel_array.unsqueeze(3)).squeeze(3)
 
         return pixel_array, label
 
