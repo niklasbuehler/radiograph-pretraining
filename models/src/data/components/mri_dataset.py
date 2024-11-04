@@ -6,6 +6,8 @@ import functools
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import torch.nn.functional as F
+import torchvision.transforms.functional as TF
+import random
 import torchio as tio
 
 class MRIDatasetBase(torch.utils.data.Dataset):
@@ -227,6 +229,15 @@ class MRIDataset(torch.utils.data.Dataset):
         
         # Random augmentations during training
         if self.augmentations:
+            # Random Cropping (90-100% of original size)
+            crop_scale = random.uniform(0.9, 1.0)
+            _, h, w = pixel_array.shape
+            new_h, new_w = int(h * crop_scale), int(w * crop_scale)
+            top = random.randint(0, h - new_h)
+            left = random.randint(0, w - new_w)
+            pixel_array = pixel_array[:, top:top + new_h, left:left + new_w]
+            pixel_array = TF.resize(pixel_array, (h, w))
+
             pixel_array = self.transform(pixel_array.unsqueeze(3)).squeeze(3)
 
         return pixel_array, label
