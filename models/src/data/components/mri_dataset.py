@@ -208,9 +208,9 @@ class MRIDataset(torch.utils.data.Dataset):
         self.augmentations = augmentations
 
         self.transform = tio.Compose([
-            tio.RandomAffine(p=0.5),
-            tio.RandomFlip(axes=('LR',), flip_probability=0.5),
-            tio.RandomGamma(p=0.5),
+            tio.RandomAffine(degrees=20, p=0.5),
+            tio.RandomFlip(axes=('P',), flip_probability=0.5),
+            tio.RandomGamma(log_gamma=0.5, p=0.5),
             tio.RandomNoise(p=0.3),
             tio.RandomBiasField(p=0.3),
             tio.RandomBlur(p=0.3)])
