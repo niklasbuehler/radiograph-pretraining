@@ -114,8 +114,11 @@ class ViTMAELinearProbingClassifier(LightningModule):
 
     def on_validation_epoch_end(self) -> None:
         acc = self.val_acc.compute()
+        if acc == 1:
+            print("[WARN] Validation accuracy reported as 1; changing to 0.")
+            acc = 0 # Quick fix to prevent first epoch from reporting as 100% accuracy
         self.val_acc_best(acc)
-        self.log("val/acc_best", self.val_acc_best.compute(), sync_dist=True, prog_bar=True, logger=True)
+        self.log("val/acc_best", self.val_acc_best.compute(), on_epoch=True, prog_bar=True)
 
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
         loss, preds, targets = self.model_step(batch)
