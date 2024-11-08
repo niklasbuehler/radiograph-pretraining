@@ -1,4 +1,4 @@
-from transformers import ViTImageProcessor
+from transformers import ViTMAEForImageClassification
 from typing import Tuple, Dict, Any
 
 import torch
@@ -25,31 +25,13 @@ class ViTMAELinearProbingClassifier(LightningModule):
         self.compile = compile
         self.mae_checkpoint = mae_checkpoint
         self.num_classes = num_classes
-        self.freeze_encoder = freeze_encoder
-        self.mean_pooling = mean_pooling
         self.save_hyperparameters()
 
         # Load the pre-trained ViT MAE model
         print("Loading checkpoint from", mae_checkpoint)
-        self.mae_model = VisionTransformerMAE.load_from_checkpoint(mae_checkpoint)
-        # Disable masking
-        self.mae_model.net.config.mask_ratio = 0
-        # Discard the decoder
-        self.mae_model.net.decoder = None
+        self.mae_model = ViTMAEForImageClassification.from_pretrained(mae_checkpoint, num_labels=self.num_classes)
 
         self.mae_model.to(self.device)
-
-        # Add a new fully connected layer for classification
-        hidden_size = self.mae_model.net.config.hidden_size # 768
-        self.classifier = nn.Linear(hidden_size, num_classes)
-
-        # (Un)freeze the encoder
-        for param in self.mae_model.net.vit.encoder.parameters():
-            param.requires_grad = not freeze_encoder
-
-        # Set the classifier to trainable
-        for param in self.classifier.parameters():
-            param.requires_grad = True
 
         self.criterion = nn.CrossEntropyLoss()
 
@@ -64,21 +46,7 @@ class ViTMAELinearProbingClassifier(LightningModule):
         self.val_acc_best = MaxMetric()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Forward pass through the encoder of the ViT MAE model
-        inputs = x.to(self.device)
-        embeddings = self.mae_model.net.vit(inputs, interpolate_pos_encoding=True).last_hidden_state
-
-        encoder_output = None
-        if self.mean_pooling:
-            encoder_output = torch.mean(embeddings, 1)
-        else:
-            # Extract CLS token
-            encoder_output = embeddings[:, 0, :]
-
-        # Forward pass through the classifier
-        logits = self.classifier(encoder_output)
-
-        return logits
+        return self.net(x, interpolate_pos_encoding=True).logits
 
     def model_step(
         self, batch: Tuple[torch.Tensor, torch.Tensor]

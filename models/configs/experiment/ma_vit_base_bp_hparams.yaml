@@ -15,21 +15,24 @@ trainer:
   min_epochs: 1
   max_epochs: 10
   accumulate_grad_batches: 64
+  
+model_checkpoint:
+  monitor: "val/acc_bal"
 
 model:
   optimizer:
-    lr: 0.0001
-  num_classes: 14 # bodypart labels
+    lr: 1e-4
+  num_classes: 14
+  pretrained_weights: google/vit-base-patch16-224
 
 data:
   df_name: df_min_ft_pt_1k
+  label: bodypart
   train_augmentations: true
   output_channels: 3
   batch_size: 1
   num_workers: 4
-  pad_to_multiple_of: 48
-  #batch_binning: smart
-  #batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
+  pad_to_multiple_of: 16
   val_size: 0.1
   test_size: 0.15
 

@@ -130,7 +130,7 @@ class MRIDataModule(LightningDataModule):
             patientid_to_strattarget = {patientid: sorted(set(subdf[self.stratification_target]),
                                                           key=lambda x: stratification_target_frequencies.loc[x])[0]
                                         for patientid, subdf in self.dsbase.df.groupby('patientid')}
-
+            
             _, test = train_test_split(list(patientid_to_strattarget.keys()),
                                        test_size=self.test_size, stratify=list(patientid_to_strattarget.values()), random_state=seed)
             test_patientids = pd.DataFrame(test)

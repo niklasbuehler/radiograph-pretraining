@@ -2,7 +2,7 @@
 
 defaults:
   - override /data: mri
-  - override /model: vit_mae_probe
+  - override /model: vit
   - override /callbacks: default
   - override /trainer: gpu
   - override /logger: wandb
@@ -13,29 +13,31 @@ seed: 12345
 
 trainer:
   min_epochs: 1
-  max_epochs: 50
+  max_epochs: 500
   accumulate_grad_batches: 64 # = effective batch size for fine-tuning
 
 early_stopping:
-  monitor: "val/acc"
+  monitor: "val/acc_bal"
   patience: 10
   mode: "max"
+  
+model_checkpoint:
+  monitor: "val/acc_bal"
 
 model:
   optimizer:
-    lr: 0.00003
-  num_classes: 14 # bodypart labels
-  freeze_encoder: false
-  mean_pooling: false
+    lr: 3e-5
+  num_classes: 14
+  pretrained_weights: /home/buehlern/Documents/Masterarbeit/models/checkpoints/ViT-B-MAE/pretrained
 
 data:
-  df_name: df_min_ft_pt_10k
+  df_name: df_min_ft_pt_1k
+  label: bodypart
   train_augmentations: true
+  output_channels: 1
   batch_size: 1
   num_workers: 4
   pad_to_multiple_of: 48
-  #batch_binning: smart
-  #batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
   val_size: 0.1
   test_size: 0.15
 

@@ -7,7 +7,7 @@ defaults:
   - override /trainer: gpu
   - override /logger: wandb
 
-tags: ["ma", "mri", "vit", "mae", "ft", "frac"]
+tags: ["ma", "mri", "vit", "base", "fm"]
 
 seed: 12345
 
@@ -26,18 +26,18 @@ model_checkpoint:
 
 model:
   optimizer:
-    lr: 3e-5
+    lr: 1e-4
   num_classes: 2
-  pretrained_weights: /home/buehlern/Documents/Masterarbeit/models/checkpoints/ViT-B-MAE/pretrained
+  pretrained_weights: "google/vit-base-patch16-224"
 
 data:
   df_name: df_min_ft_clean
-  label: fracture
+  label: foreignmaterial
   train_augmentations: true
-  output_channels: 1
+  output_channels: 3
   batch_size: 1
   num_workers: 4
-  pad_to_multiple_of: 48
+  pad_to_multiple_of: 16
   val_size: 0.1
   test_size: 0.15
 

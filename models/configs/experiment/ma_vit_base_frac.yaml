@@ -17,25 +17,27 @@ trainer:
   accumulate_grad_batches: 64 # = effective batch size for fine-tuning
 
 early_stopping:
-  monitor: "val/acc"
+  monitor: "val/acc_bal"
   patience: 10
   mode: "max"
+  
+model_checkpoint:
+  monitor: "val/acc_bal"
 
 model:
   optimizer:
-    lr: 0.0001
-  num_classes: 2 # fracture YES/NO
+    lr: 1e-4
+  num_classes: 2
+  pretrained_weights: "google/vit-base-patch16-224"
 
 data:
-  df_name: df_min_ft
+  df_name: df_min_ft_clean
   label: fracture
   train_augmentations: true
   output_channels: 3
   batch_size: 1
   num_workers: 4
-  pad_to_multiple_of: 48
-  #batch_binning: smart
-  #batch_bins: [1152, 1536, 1920, 2304, 2688, 3072]
+  pad_to_multiple_of: 16
   val_size: 0.1
   test_size: 0.15
 
