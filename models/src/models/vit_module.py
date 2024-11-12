@@ -5,7 +5,7 @@ from lightning import LightningModule
 from torch import nn
 from torchmetrics.classification.accuracy import Accuracy
 from torchmetrics import MaxMetric, MeanMetric
-from transformers import ViTForImageClassification
+from transformers import ViTForImageClassification, ViTConfig
 
 class VisionTransformerBodyPartClassifier(LightningModule):
     def __init__(
